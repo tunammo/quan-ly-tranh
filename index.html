@@ -17,7 +17,7 @@
   --blue:#2a5a8a;--blue2:#70b0f0;
 }
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:60px}
- 
+
 /* ── HEADER ── */
 .header{background:linear-gradient(135deg,#120f07,#1e1608 60%,#2a1e0a);border-bottom:1px solid var(--gold);padding:0 28px;height:58px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:50}
 .header h1{font-size:1.15rem;font-weight:700;color:var(--gold2);letter-spacing:.03em}
@@ -25,22 +25,22 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .hstat{display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(200,146,58,.08);border:1px solid var(--border2);border-radius:20px;white-space:nowrap}
 .hstat.green{background:rgba(60,180,60,.1);border-color:var(--green)}
 .hstat.blue{background:rgba(42,90,138,.15);border-color:var(--blue)}
- 
+
 /* ── NAV ── */
 .nav{display:flex;gap:2px;padding:0 28px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:58px;z-index:40}
 .nav-tab{padding:11px 20px;font-size:.85rem;cursor:pointer;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;transition:.15s;white-space:nowrap}
 .nav-tab:hover{color:var(--text)}
 .nav-tab.active{color:var(--gold2);border-bottom-color:var(--gold);font-weight:600}
- 
+
 /* ── LAYOUT ── */
 .page{display:none;padding:24px 28px;max-width:1100px}
 .page.active{display:block}
- 
+
 /* ── CARDS ── */
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
 .card-title{font-size:.82rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;display:flex;align-items:center;gap:7px}
 .card-title::before{content:'';display:block;width:3px;height:14px;background:var(--gold);border-radius:2px}
- 
+
 /* ── THEME GRID ── */
 .theme-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
 @media(max-width:600px){.theme-grid{grid-template-columns:repeat(3,1fr)}}
@@ -51,19 +51,19 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .theme-btn .nm{font-size:.78rem;font-weight:600;display:block}
 .theme-btn .cd{font-size:.68rem;color:var(--text3);margin-top:2px;font-family:monospace}
 .theme-btn.sel .cd{color:var(--gold)}
- 
+
 /* ── DROP ZONE ── */
 .drop{border:2px dashed var(--border2);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:.15s;color:var(--text2);position:relative}
 .drop:hover,.drop.over{border-color:var(--gold);background:rgba(200,146,58,.04);color:var(--text)}
 .drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 .drop-icon{font-size:2rem;margin-bottom:8px;display:block}
 .drop-hint{font-size:.82rem;margin-top:4px;color:var(--text3)}
- 
+
 /* ── PREVIEW ── */
 .preview-box{display:none;margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid var(--border2);background:var(--bg3);text-align:center}
 .preview-box img{max-width:100%;max-height:300px;display:block;margin:0 auto}
 .preview-box .prev-label{font-size:.75rem;color:var(--text3);padding:6px;border-top:1px solid var(--border)}
- 
+
 /* ── BUTTONS ── */
 .btn{padding:9px 22px;border-radius:8px;border:none;cursor:pointer;font-size:.85rem;font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:6px}
 .btn-primary{background:linear-gradient(135deg,#7a4e0e,var(--gold));color:#fff}
@@ -78,13 +78,13 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .btn-danger:hover{background:rgba(180,40,40,.25)}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .btn-full{width:100%;justify-content:center}
- 
+
 /* ── PROGRESS ── */
 .prog-wrap{display:none;margin-top:14px}
 .prog-bar{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
 .prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:3px;transition:width .25s}
 .prog-label{font-size:.78rem;color:var(--text2);margin-top:5px}
- 
+
 /* ── BATCH LIST ── */
 .batch-scroll{max-height:260px;overflow-y:auto;margin-top:10px;border:1px solid var(--border);border-radius:8px}
 .brow{display:grid;grid-template-columns:1fr 90px 90px;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--border);font-size:.8rem}
@@ -92,7 +92,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .brow .fname{color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .brow .bcode{font-family:monospace;color:var(--gold);font-size:.78rem}
 .brow .bstat{text-align:right}
- 
+
 /* ── BADGES ── */
 .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:.72rem;font-weight:700}
 .badge-ok{background:rgba(60,180,60,.12);color:#6de06d;border:1px solid #2a7a2a}
@@ -100,7 +100,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .badge-near{background:rgba(200,100,30,.12);color:#ffaa50;border:1px solid #7a4010}
 .badge-err{background:rgba(200,50,50,.12);color:#ff7070;border:1px solid #7a1a1a}
 .badge-wait{background:rgba(100,120,200,.1);color:#90aaee;border:1px solid #2a3a7a}
- 
+
 /* ── RESULT PANEL ── */
 .result-panel{display:none;margin-top:14px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px}
 .result-inner{display:flex;gap:14px;align-items:flex-start}
@@ -111,7 +111,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .sim-label{font-size:.75rem;color:var(--text2);margin-bottom:3px}
 .sim-bar{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
 .sim-fill{height:100%;border-radius:3px}
- 
+
 /* ── CATALOG FOLDERS ── */
 .folder-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
 .folder-card{background:var(--bg2);border:1.5px solid var(--border2);border-radius:14px;padding:20px 18px;cursor:pointer;transition:.18s;position:relative;overflow:hidden}
@@ -125,13 +125,13 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .folder-card .fc-count strong{color:var(--gold2)}
 .folder-card .fc-preview{display:flex;gap:4px;margin-top:12px}
 .folder-card .fc-preview img{width:42px;height:42px;object-fit:cover;border-radius:5px;border:1px solid var(--border)}
- 
+
 /* ── BREADCRUMB ── */
 .breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:.85rem;color:var(--text2)}
 .bc-link{cursor:pointer;color:var(--text2);transition:.15s}
 .bc-link:hover{color:var(--gold2)}
 .bc-current{color:var(--text);font-weight:600}
- 
+
 /* ── IMAGE GRID ── */
 .cat-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .cat-toolbar input{flex:1;min-width:150px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:7px 12px;color:var(--text);font-size:.83rem;outline:none}
@@ -150,7 +150,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .pages button:hover{border-color:var(--gold)}
 .pages button.active{border-color:var(--gold);color:var(--gold2);background:rgba(200,146,58,.1)}
 .cat-empty{text-align:center;padding:40px 20px;color:var(--text2);font-size:.9rem}
- 
+
 /* ── SETTINGS ── */
 .setting-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
 .setting-item:last-child{border-bottom:none}
@@ -160,13 +160,13 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .setting-control{display:flex;align-items:center;gap:8px}
 .setting-control input[type=range]{width:130px;accent-color:var(--gold)}
 .setting-control .val{font-family:monospace;font-size:.88rem;color:var(--gold2);min-width:28px;text-align:right}
- 
+
 /* ── MODE SWITCH ── */
 .mode-switch{display:flex;gap:0;border:1px solid var(--border2);border-radius:8px;overflow:hidden;width:fit-content;margin-bottom:16px}
 .mode-switch button{padding:8px 18px;border:none;cursor:pointer;font-size:.82rem;font-weight:600;transition:.15s;background:var(--bg3);color:var(--text2)}
 .mode-switch button.active{background:rgba(200,146,58,.2);color:var(--gold2)}
 .mode-switch button:first-child{border-right:1px solid var(--border2)}
- 
+
 /* ── DRIVE SETUP ── */
 .drive-setup-box{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:18px;margin-top:12px}
 .drive-setup-box h4{color:var(--gold2);font-size:.88rem;margin-bottom:12px}
@@ -177,25 +177,25 @@ code{background:var(--bg4);border:1px solid var(--border);border-radius:4px;padd
 .inp-row label{display:block;font-size:.78rem;color:var(--text2);margin-bottom:5px}
 .inp-row input{width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:7px;padding:8px 12px;color:var(--text);font-size:.85rem;outline:none}
 .inp-row input:focus{border-color:var(--gold)}
- 
+
 /* ── INFO BOX ── */
 .info-box{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-size:.78rem;color:var(--text2);line-height:1.7}
 .info-box strong{color:var(--gold2)}
- 
+
 /* ── DRIVE STATUS ── */
 .drive-connected{background:rgba(40,120,40,.12);border:1px solid var(--green);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-top:12px}
 .drive-connected .dc-email{font-size:.88rem;font-weight:600;color:var(--green2)}
 .drive-connected .dc-sub{font-size:.75rem;color:var(--text2);margin-top:2px}
- 
+
 /* ── LOGO ── */
 .logo-preview{width:60px;height:60px;border-radius:8px;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;overflow:hidden}
 .logo-preview img{width:100%;height:100%;object-fit:contain}
- 
+
 /* ── SHARPEN MODE CARDS ── */
 #page-sharpen .sharpen-btn{padding:12px 8px;text-align:center;border-radius:10px;cursor:pointer;transition:.15s}
 #page-sharpen .sharpen-btn.active{border-color:var(--gold);background:rgba(200,146,58,.12);color:var(--gold2)}
 #page-sharpen .sharpen-btn .em{font-size:1.4rem}
- 
+
 /* ── COMPARE SLIDER ── */
 .compare-wrap{position:relative;overflow:hidden;cursor:col-resize;border-radius:8px;user-select:none;touch-action:none}
 .compare-wrap img{display:block;width:100%;height:auto}
@@ -207,12 +207,12 @@ code{background:var(--bg4);border:1px solid var(--border);border-radius:4px;padd
 .compare-label{position:absolute;top:8px;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:4px;pointer-events:none}
 .compare-label.before{left:8px;background:rgba(0,0,0,.6);color:#fff}
 .compare-label.after{right:8px;background:rgba(200,146,58,.9);color:#000}
- 
+
 /* ── AI UPSCALE ── */
 .ai-upscale-bar{display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;flex-wrap:wrap}
 .ai-upscale-bar .ai-label{font-size:.78rem;color:var(--text2);flex:1}
 .ai-progress{font-size:.75rem;color:var(--blue2);display:none}
- 
+
 /* ── LIGHTBOX ── */
 #lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:12px}
 #lb.on{display:flex}
@@ -220,7 +220,7 @@ code{background:var(--bg4);border:1px solid var(--border);border-radius:4px;padd
 #lb .lb-code{color:var(--gold2);font-family:monospace;font-size:.95rem}
 #lb .lb-x{position:absolute;top:18px;right:24px;font-size:1.6rem;cursor:pointer;color:var(--text2);background:none;border:none}
 #lb .lb-x:hover{color:var(--gold2)}
- 
+
 /* ── STATUS BAR ── */
 #sbar{position:fixed;bottom:0;left:0;right:0;background:rgba(8,7,4,.96);border-top:1px solid var(--border2);padding:8px 24px;font-size:.78rem;color:var(--text2);display:none;z-index:99}
 #sbar.show{display:block}
@@ -231,7 +231,7 @@ canvas{display:none}
 </style>
 </head>
 <body>
- 
+
 <!-- HEADER -->
 <header class="header">
   <div id="hdr-logo" style="width:32px;height:32px;border-radius:6px;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">🖼️</div>
@@ -241,7 +241,7 @@ canvas{display:none}
     <div class="hstat" id="stat-count">⏳</div>
   </div>
 </header>
- 
+
 <!-- NAV -->
 <nav class="nav">
   <button class="nav-tab active" onclick="goPage('upload')">📷 Đóng mã</button>
@@ -249,7 +249,7 @@ canvas{display:none}
   <button class="nav-tab" onclick="goPage('catalog')">📁 Danh mục</button>
   <button class="nav-tab" onclick="goPage('settings')">⚙️ Cài đặt</button>
 </nav>
- 
+
 <!-- ════════════════════════════════
      PAGE: UPLOAD
 ════════════════════════════════ -->
@@ -258,14 +258,14 @@ canvas{display:none}
     <div class="card-title">Chọn chủ đề</div>
     <div class="theme-grid" id="theme-grid"></div>
   </div>
- 
+
   <div class="card">
     <div class="card-title">Chọn ảnh</div>
     <div class="btn-row" style="margin:0 0 14px">
       <button class="btn btn-ghost" id="mode-single-btn" onclick="setMode('single')">🖼️ Đơn lẻ</button>
       <button class="btn btn-ghost" id="mode-batch-btn" onclick="setMode('batch')">📦 Hàng loạt</button>
     </div>
- 
+
     <div id="zone-single">
       <div class="drop" id="dz-s" ondragover="dzo(event,'dz-s')" ondragleave="dzl('dz-s')" ondrop="dzDropS(event)">
         <input type="file" accept="image/*" onchange="pickSingle(this.files[0])" onclick="this.value=''">
@@ -278,7 +278,7 @@ canvas{display:none}
         <div class="prev-label" id="prev-label"></div>
       </div>
     </div>
- 
+
     <div id="zone-batch" style="display:none">
       <div class="drop" id="dz-b" ondragover="dzo(event,'dz-b')" ondragleave="dzl('dz-b')" ondrop="dzDropB(event)">
         <input type="file" accept="image/*" multiple onchange="pickBatch(this.files)" onclick="this.value=''">
@@ -295,7 +295,7 @@ canvas{display:none}
       </div>
     </div>
   </div>
- 
+
   <div class="card">
     <div class="card-title">Xử lý</div>
     <button class="btn btn-primary btn-full" id="btn-go" onclick="doProcess()" disabled>🔖 Đóng mã & lưu</button>
@@ -329,12 +329,12 @@ canvas{display:none}
     </div>
   </div>
 </div>
- 
+
 <!-- ════════════════════════════════
      PAGE: SHARPEN (Làm nét)
 ════════════════════════════════ -->
 <div class="page" id="page-sharpen">
- 
+
   <!-- Chế độ làm nét -->
   <div class="card">
     <div class="card-title">Chế độ xử lý</div>
@@ -364,7 +364,7 @@ canvas{display:none}
       ⚠️ AI Upscale cần <strong>Replicate API token</strong>. Vào <strong>Cài đặt → AI Upscale</strong> để nhập token.
     </div>
   </div>
- 
+
   <!-- Upload -->
   <div class="card">
     <div class="card-title">Chọn ảnh</div>
@@ -372,7 +372,7 @@ canvas{display:none}
       <button class="btn btn-ghost" id="sh-mode-single-btn" onclick="setShMode('single')">🖼️ Đơn lẻ</button>
       <button class="btn btn-ghost" id="sh-mode-batch-btn" onclick="setShMode('batch')">📦 Hàng loạt</button>
     </div>
- 
+
     <!-- Single -->
     <div id="sh-zone-single">
       <div class="drop" id="sh-dz-s" ondragover="dzo(event,'sh-dz-s')" ondragleave="dzl('sh-dz-s')" ondrop="shDropS(event)">
@@ -381,7 +381,7 @@ canvas{display:none}
         <div>Kéo thả hoặc <strong>click</strong> để chọn ảnh</div>
         <div class="drop-hint">JPG · PNG · WEBP</div>
       </div>
- 
+
       <!-- Compare slider -->
       <div id="sh-compare-box" style="display:none;margin-top:12px">
         <div class="compare-wrap" id="sh-compare-wrap">
@@ -396,14 +396,14 @@ canvas{display:none}
         </div>
         <div class="prev-label" id="sh-compare-label" style="margin-top:6px"></div>
       </div>
- 
+
       <!-- Plain preview (before processing) -->
       <div class="preview-box" id="sh-prev-box" style="display:none">
         <img id="sh-prev-img" src="">
         <div class="prev-label" id="sh-prev-label"></div>
       </div>
     </div>
- 
+
     <!-- Batch -->
     <div id="sh-zone-batch" style="display:none">
       <div class="drop" id="sh-dz-b" ondragover="dzo(event,'sh-dz-b')" ondragleave="dzl('sh-dz-b')" ondrop="shDropB(event)">
@@ -421,7 +421,7 @@ canvas{display:none}
       </div>
     </div>
   </div>
- 
+
   <!-- Xử lý & Lưu -->
   <div class="card">
     <div class="card-title">Lưu kết quả</div>
@@ -445,9 +445,9 @@ canvas{display:none}
       <div id="sh-batch-summary" style="font-size:.8rem;color:var(--text2);margin-top:8px"></div>
     </div>
   </div>
- 
+
 </div>
- 
+
 <!-- ════════════════════════════════
      PAGE: CATALOG
 ════════════════════════════════ -->
@@ -476,12 +476,12 @@ canvas{display:none}
     </div>
   </div>
 </div>
- 
+
 <!-- ════════════════════════════════
      PAGE: SETTINGS
 ════════════════════════════════ -->
 <div class="page" id="page-settings">
- 
+
   <!-- Storage Mode -->
   <div class="card">
     <div class="card-title">Chế độ lưu trữ</div>
@@ -490,7 +490,7 @@ canvas{display:none}
       <button id="mode-drive-btn" onclick="setStorageMode('drive')">☁️ Drive</button>
       <button id="mode-both-btn" onclick="setStorageMode('both')">💾+☁️ Cả hai</button>
     </div>
- 
+
     <!-- OFFLINE INFO -->
     <div id="offline-info">
       <div class="info-box">
@@ -503,14 +503,14 @@ canvas{display:none}
         <input type="file" id="imp-file" accept=".json" style="display:none" onchange="importBackup(this.files[0])">
       </div>
     </div>
- 
+
     <!-- GOOGLE DRIVE SETUP -->
     <div id="drive-info" style="display:none">
       <div class="info-box">
         Ảnh lưu trên <strong>Google Drive</strong> của bạn, phân thư mục theo chủ đề.<br>
         Toàn bộ nhóm cùng truy cập bằng cách <strong>chia sẻ thư mục</strong> "AV Decor Tranh" trong Drive.
       </div>
- 
+
       <!-- Nếu đã kết nối -->
       <div id="drive-connected-box" style="display:none">
         <div class="drive-connected">
@@ -526,7 +526,7 @@ canvas{display:none}
           <button class="btn btn-ghost" onclick="exportCSVAll()">📊 Xuất CSV</button>
         </div>
       </div>
- 
+
       <!-- Chưa kết nối — hướng dẫn setup -->
       <div id="drive-setup-box" class="drive-setup-box">
         <h4>⚙️ Thiết lập Google Drive (làm một lần)</h4>
@@ -567,7 +567,7 @@ canvas{display:none}
       </div>
     </div>
   </div>
- 
+
   <!-- Replicate API -->
   <div class="card">
     <div class="card-title">AI Upscale — Replicate API</div>
@@ -581,7 +581,7 @@ canvas{display:none}
     </div>
     <div id="replicate-status" style="font-size:.78rem;margin-top:8px;color:var(--text2)"></div>
   </div>
- 
+
   <!-- Logo -->
   <div class="card">
     <div class="card-title">Logo trên tem đóng mã</div>
@@ -600,7 +600,7 @@ canvas{display:none}
       </div>
     </div>
   </div>
- 
+
   <!-- Duplicate detection -->
   <div class="card">
     <div class="card-title">Phát hiện trùng lặp — dHash 64-bit</div>
@@ -623,13 +623,13 @@ canvas{display:none}
       </div>
     </div>
   </div>
- 
+
   <div class="card">
     <div class="card-title">Xoá dữ liệu</div>
     <button class="btn btn-danger" onclick="clearAll()">🗑️ Xoá toàn bộ catalog (offline)</button>
   </div>
 </div>
- 
+
 <!-- LIGHTBOX -->
 <div id="lb">
   <button class="lb-x" onclick="closeLb()">✕</button>
@@ -637,10 +637,10 @@ canvas{display:none}
   <div class="lb-code" id="lb-code"></div>
   <button class="btn btn-primary" onclick="dlLb()">⬇️ Tải xuống</button>
 </div>
- 
+
 <div id="sbar"></div>
 <canvas id="cv2"></canvas>
- 
+
 <script>
 // ══════════════════════════════════════════════════════════════════
 // CONSTANTS & STATE
@@ -655,7 +655,7 @@ const THEMES=[
 const DB_NAME='avdecor_v3', DB_VER=1, STORE='cat', PAGE=50;
 const DRIVE_ROOT_NAME='AV Decor Tranh';
 const DRIVE_CATALOG_NAME='catalog.json';
- 
+
 let DB=null;
 let selTheme=null, mode='single';
 let sFile=null, sDataURL=null, sBlob=null, sCode=null;
@@ -665,7 +665,7 @@ let bFiles=[], bBlobs={}, bResults=[];
 let catData=[], catFiltered=[], catPage=1, activeFolder=null;
 let THRESH=10, WARN=18;
 let logoDataURL=null;
- 
+
 // Google Drive state
 let storageMode='offline'; // 'offline' | 'drive' | 'both'
 let driveToken=null;
@@ -676,7 +676,7 @@ let driveCatalogFileId=null;
 let driveUserEmail='';
 let driveClientId='';
 let tokenClient=null;
- 
+
 // ══════════════════════════════════════════════════════════════════
 // INDEXEDDB
 // ══════════════════════════════════════════════════════════════════
@@ -699,34 +699,34 @@ const dbAll=()=>dbtx('readonly',s=>s.getAll());
 const dbPut=v=>dbtx('readwrite',s=>s.put(v));
 const dbDel=k=>dbtx('readwrite',s=>s.delete(k));
 const dbCnt=()=>dbtx('readonly',s=>s.count());
- 
+
 // ══════════════════════════════════════════════════════════════════
 // GOOGLE DRIVE API
 // ══════════════════════════════════════════════════════════════════
 const DRIVE_SCOPE='https://www.googleapis.com/auth/drive';
 const DRIVE_API='https://www.googleapis.com/drive/v3';
 const DRIVE_UPLOAD='https://www.googleapis.com/upload/drive/v3';
- 
+
 function driveHeaders(){
   return {'Authorization':'Bearer '+driveToken,'Content-Type':'application/json'};
 }
- 
+
 async function driveGet(path,params=''){
   const res=await fetch(`${DRIVE_API}/${path}?${params}`,{headers:{'Authorization':'Bearer '+driveToken}});
   if(!res.ok) throw new Error('Drive API error: '+res.status);
   return res.json();
 }
- 
+
 async function drivePost(path,body){
   const res=await fetch(`${DRIVE_API}/${path}`,{method:'POST',headers:driveHeaders(),body:JSON.stringify(body)});
   if(!res.ok) throw new Error('Drive API error: '+res.status);
   return res.json();
 }
- 
+
 async function driveDelete(fileId){
   await fetch(`${DRIVE_API}/files/${fileId}`,{method:'DELETE',headers:{'Authorization':'Bearer '+driveToken}});
 }
- 
+
 // Find a file/folder by name in a parent
 async function driveFindFile(name, parentId, mimeType=''){
   let q=`name='${name.replace(/'/g,"\\'")}' and trashed=false`;
@@ -735,7 +735,7 @@ async function driveFindFile(name, parentId, mimeType=''){
   const data=await driveGet('files',`q=${encodeURIComponent(q)}&fields=files(id,name,thumbnailLink)&spaces=drive`);
   return data.files && data.files.length>0 ? data.files[0] : null;
 }
- 
+
 // Create folder in Drive
 async function driveCreateFolder(name, parentId){
   const body={name,mimeType:'application/vnd.google-apps.folder'};
@@ -743,14 +743,14 @@ async function driveCreateFolder(name, parentId){
   const data=await drivePost('files',body);
   return data.id;
 }
- 
+
 // Find or create folder
 async function driveEnsureFolder(name, parentId){
   const existing=await driveFindFile(name,parentId,'application/vnd.google-apps.folder');
   if(existing) return existing.id;
   return await driveCreateFolder(name,parentId);
 }
- 
+
 // Upload image blob to Drive (multipart)
 async function driveUploadImage(blob, name, parentId){
   const metadata=JSON.stringify({name,parents:[parentId]});
@@ -765,7 +765,7 @@ async function driveUploadImage(blob, name, parentId){
   if(!res.ok) throw new Error('Drive upload error: '+res.status);
   return res.json();
 }
- 
+
 // Read JSON file from Drive
 async function driveReadJSON(fileId){
   const res=await fetch(`${DRIVE_API}/files/${fileId}?alt=media`,{
@@ -774,7 +774,7 @@ async function driveReadJSON(fileId){
   if(!res.ok) throw new Error('Drive read error: '+res.status);
   return res.json();
 }
- 
+
 // Write/update JSON file in Drive
 async function driveWriteJSON(fileId, data){
   const body=new Blob([JSON.stringify(data)],{type:'application/json'});
@@ -789,7 +789,7 @@ async function driveWriteJSON(fileId, data){
   if(!res.ok) throw new Error('Drive write error: '+res.status);
   return res.json();
 }
- 
+
 // Create catalog.json if not exists, otherwise just update
 async function driveUpdateCatalog(entries){
   if(!driveCatalogFileId){
@@ -809,7 +809,7 @@ async function driveUpdateCatalog(entries){
     await driveWriteJSON(driveCatalogFileId,{v:1,entries});
   }
 }
- 
+
 // Get full image URL from Drive (with auth)
 async function getDriveImageBlob(fileId){
   const res=await fetch(`${DRIVE_API}/files/${fileId}?alt=media`,{
@@ -818,7 +818,7 @@ async function getDriveImageBlob(fileId){
   if(!res.ok) throw new Error('Cannot load image from Drive');
   return URL.createObjectURL(await res.blob());
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // OAUTH2 — Google Identity Services
 // ══════════════════════════════════════════════════════════════════
@@ -837,7 +837,7 @@ function initTokenClient(clientId){
     waitGIS();
   });
 }
- 
+
 function requestToken(){
   return new Promise((res,rej)=>{
     tokenClient.callback=(resp)=>{
@@ -851,12 +851,12 @@ function requestToken(){
     // If silent fails, GIS will trigger prompt automatically
   });
 }
- 
+
 async function ensureToken(){
   if(driveToken && Date.now()<driveTokenExpiry) return;
   await requestToken();
 }
- 
+
 // Get user email from token
 async function getDriveUserInfo(){
   const res=await fetch('https://www.googleapis.com/oauth2/v1/userinfo',{
@@ -864,7 +864,7 @@ async function getDriveUserInfo(){
   });
   return res.json();
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // DRIVE CONNECT / SETUP
 // ══════════════════════════════════════════════════════════════════
@@ -874,7 +874,7 @@ async function connectDrive(){
   errEl.textContent='';
   if(!clientId){errEl.textContent='⚠️ Nhập Client ID'; return;}
   if(!clientId.includes('.apps.googleusercontent.com')){errEl.textContent='⚠️ Client ID không đúng định dạng';return;}
- 
+
   try{
     status('⏳ Đang kết nối Google Drive...');
     driveClientId=clientId;
@@ -893,7 +893,7 @@ async function connectDrive(){
     console.error(e);
   }
 }
- 
+
 async function setupDriveFolders(){
   status('⏳ Đang thiết lập thư mục Drive...',8000);
   // Root folder
@@ -913,7 +913,7 @@ async function setupDriveFolders(){
   document.getElementById('drive-folder-info').textContent=
     `📁 ${DRIVE_ROOT_NAME}/ · ${Object.keys(driveFolderIds).length} thư mục con`;
 }
- 
+
 function showDriveConnected(){
   document.getElementById('drive-setup-box').style.display='none';
   document.getElementById('drive-connected-box').style.display='block';
@@ -924,7 +924,7 @@ function showDriveConnected(){
   localStorage.setItem('storage_mode','drive');
   updateStorageUI();
 }
- 
+
 function disconnectDrive(){
   if(!confirm('Ngắt kết nối Google Drive? Dữ liệu trên Drive không bị xoá.')) return;
   driveToken=null; driveRootId=null; driveFolderIds={}; driveCatalogFileId=null;
@@ -937,7 +937,7 @@ function disconnectDrive(){
   document.getElementById('drive-client-id').value='';
   updateStorageUI(); status('Đã ngắt kết nối Drive');
 }
- 
+
 async function syncFromDrive(){
   if(!driveToken){status('❌ Chưa kết nối Drive');return;}
   try{
@@ -950,14 +950,14 @@ async function syncFromDrive(){
     status(`✅ Đã tải ${catData.length} mẫu từ Drive`);
   }catch(e){status('❌ Lỗi đồng bộ: '+e.message);}
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // STORAGE INTERFACE (unified offline + drive)
 // ══════════════════════════════════════════════════════════════════
 async function storeEntry(entry, blob){
   const doDrive = storageMode==='drive' || storageMode==='both';
   const doLocal = storageMode==='offline' || storageMode==='both';
- 
+
   if(doDrive){
     await ensureToken();
     const folderId=driveFolderIds[entry.theme_code];
@@ -973,7 +973,7 @@ async function storeEntry(entry, blob){
     await driveUpdateCatalog(entries);
     catData=entries.sort((a,b)=>(b.created_at||0)-(a.created_at||0));
   }
- 
+
   if(doLocal){
     // Store image as base64 in IndexedDB
     const imgData=await blobToB64(blob);
@@ -981,10 +981,10 @@ async function storeEntry(entry, blob){
     delete localEntry.thumb_url; // not needed locally
     await dbPut(localEntry);
   }
- 
+
   return entry;
 }
- 
+
 async function loadAllEntries(){
   const useDrive = storageMode==='drive' || storageMode==='both';
   if(useDrive){
@@ -1010,7 +1010,7 @@ async function loadAllEntries(){
     return await dbAll();
   }
 }
- 
+
 async function deleteEntry(code){
   const useDrive = storageMode==='drive' || storageMode==='both';
   const useLocal = storageMode==='offline' || storageMode==='both';
@@ -1029,13 +1029,13 @@ async function deleteEntry(code){
     if(storageMode==='offline') catData=catData.filter(r=>r.code!==code);
   }
 }
- 
+
 async function getEntryCount(){
   const useDrive = storageMode==='drive' || storageMode==='both';
   if(useDrive) return catData.length;
   return await dbCnt();
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // dHASH 64-bit + Hamming
 // ══════════════════════════════════════════════════════════════════
@@ -1073,7 +1073,7 @@ async function chkDup(hash){
   for(const e of all){if(!e.hash)continue;const d=hamming(hash,e.hash);if(d<best){best=d;bestE=e;}}
   return {dist:best,entry:bestE};
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // CODE GENERATOR
 // ══════════════════════════════════════════════════════════════════
@@ -1084,7 +1084,7 @@ async function nextCode(prefix){
   const max=Math.max(...same.map(r=>parseInt(r.code.slice(prefix.length),10)||0));
   return prefix+String(max+1).padStart(5,'0');
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // STAMP
 // ══════════════════════════════════════════════════════════════════
@@ -1119,13 +1119,13 @@ async function stampImg(dataURL,code){
   ctx.fillText(code,tx2,ty);
   return new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error('Canvas error')),'image/jpeg',.93));
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // FILE UTILS
 // ══════════════════════════════════════════════════════════════════
 function readFile(f){return new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(f);});}
 function blobToB64(blob){return new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(blob);});}
- 
+
 // ══════════════════════════════════════════════════════════════════
 // COMPARE SLIDER
 // ══════════════════════════════════════════════════════════════════
@@ -1149,7 +1149,7 @@ function initCompare(){
   wrap.addEventListener('mousemove',move);
   wrap.addEventListener('touchmove',move,{passive:true});
 }
- 
+
 function showCompare(beforeURL, afterURL, label){
   // Fix after image width to match container
   const wrap=document.getElementById('compare-wrap');
@@ -1170,13 +1170,14 @@ function showCompare(beforeURL, afterURL, label){
   document.getElementById('prev-box').style.display='none';
   initCompare();
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // REPLICATE AI UPSCALE
 // ══════════════════════════════════════════════════════════════════
 let replicateKey='';
-const REPLICATE_MODEL='nightmareai/real-esrgan'; // dùng latest version tự động
- 
+const REPLICATE_MODEL='nightmareai/real-esrgan';
+const PROXY_URL='https://avdecor-proxy.tuna-mmo93.workers.dev';
+
 function saveReplicateKey(v){
   replicateKey=v.trim();
   localStorage.setItem('replicate_key',replicateKey);
@@ -1184,7 +1185,7 @@ function saveReplicateKey(v){
   if(replicateKey) s.textContent='✅ Token đã lưu';
   else s.textContent='';
 }
- 
+
 async function doAiUpscale(){
   if(!replicateKey){
     alert('Vui lòng nhập Replicate API token trong Cài đặt trước.');
@@ -1210,7 +1211,7 @@ async function doAiUpscale(){
     console.error(e);
   }
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // SHARPEN ENGINE
 // ══════════════════════════════════════════════════════════════════
@@ -1221,7 +1222,7 @@ function setSharpen(mode){
   // Re-apply to current image if loaded
   if(sOrigDataURL) applySharpenToPreview(sOrigDataURL);
 }
- 
+
 // Gaussian blur on pixel data (radius 1 = 3x3 kernel)
 function gaussianBlur(data, w, h, radius){
   const out=new Uint8ClampedArray(data.length);
@@ -1269,7 +1270,7 @@ function gaussianBlur(data, w, h, radius){
   }
   return out;
 }
- 
+
 // High-pass sharpen: original + (original - blurred) * amount, với threshold
 function highPassSharpen(data, w, h, radius, amount, threshold){
   const blurred=gaussianBlur(data, w, h, radius);
@@ -1289,7 +1290,7 @@ function highPassSharpen(data, w, h, radius, amount, threshold){
   }
   return out;
 }
- 
+
 // Main sharpen function — returns sharpened dataURL
 function sharpenDataURL(dataURL, mode){
   return new Promise(res=>{
@@ -1317,7 +1318,7 @@ function sharpenDataURL(dataURL, mode){
     img.src=dataURL;
   });
 }
- 
+
 async function applySharpenToPreview(origURL){
   if(sharpenMode==='off'){
     sDataURL=origURL;
@@ -1330,7 +1331,7 @@ async function applySharpenToPreview(origURL){
   sDataURL=sharpened;
   showCompare(origURL, sharpened, '✨ Kéo thanh trượt để so sánh trước/sau');
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // UI HELPERS
 // ══════════════════════════════════════════════════════════════════
@@ -1405,7 +1406,7 @@ async function silentReconnect(){
     document.getElementById('drive-setup-box').style.display='block';
   }
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // SINGLE
 // ══════════════════════════════════════════════════════════════════
@@ -1420,7 +1421,7 @@ async function pickSingle(f){
   const aiBtn=document.getElementById('btn-ai');
   aiBtn.disabled=false; aiBtn.textContent='Upscale 4×';
   document.getElementById('ai-prog').style.display='none';
- 
+
   if(sharpenMode!=='off'){
     // Show original preview first
     document.getElementById('prev-img').src=sOrigDataURL;
@@ -1440,7 +1441,7 @@ async function pickSingle(f){
   document.getElementById('ai-bar').style.display=replicateKey?'flex':'none';
   checkReady();
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // BATCH
 // ══════════════════════════════════════════════════════════════════
@@ -1462,12 +1463,12 @@ function setBRow(i,code,badgeHTML){
   const bc=document.getElementById('bcode-'+i);if(bc)bc.textContent=code;
   const bs=document.getElementById('bstat-'+i);if(bs)bs.innerHTML=badgeHTML;
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // PROCESS
 // ══════════════════════════════════════════════════════════════════
 async function doProcess(){if(!selTheme)return;mode==='single'?await doSingle():await doBatch();}
- 
+
 async function doSingle(){
   const btn=document.getElementById('btn-go');
   btn.disabled=true;btn.textContent='⏳ Đang xử lý...';
@@ -1508,7 +1509,7 @@ async function doSingle(){
   }catch(e){status('❌ Lỗi: '+e.message);console.error(e);}
   finally{btn.disabled=false;btn.textContent='🔖 Đóng mã & lưu';setTimeout(()=>pw.style.display='none',1200);}
 }
- 
+
 function showSingleResult(code,imgSrc,type,dist,dupCode,warnE){
   document.getElementById('res-thumb').src=imgSrc;
   document.getElementById('res-thumb').onclick=()=>openLbSrc(imgSrc,code);
@@ -1532,14 +1533,14 @@ function showSingleResult(code,imgSrc,type,dist,dupCode,warnE){
   document.getElementById('res-badge').innerHTML=badge;
   document.getElementById('result-single').style.display='block';
 }
- 
+
 function dlSingle(){
   const src=document.getElementById('res-thumb').src;
   if(!src||src===window.location.href)return;
   const a=document.createElement('a');a.href=src;a.download=(sCode||'tranh')+'.jpg';a.click();
 }
 function copyCode(){if(sCode){navigator.clipboard.writeText(sCode);status('📋 Đã copy: '+sCode);}}
- 
+
 async function doBatch(){
   if(!bFiles.length||!selTheme)return;
   const btn=document.getElementById('btn-go');btn.disabled=true;
@@ -1596,7 +1597,7 @@ async function doBatch(){
   btn.disabled=false;btn.textContent=`⚡ Đóng mã ${total} ảnh`;
   refreshCount();
 }
- 
+
 async function dlZip(){
   const codes=Object.keys(bBlobs);
   if(!codes.length){alert('Không có ảnh mới để tải');return;}
@@ -1625,7 +1626,7 @@ function clearBatch(){
   document.getElementById('prog-wrap').style.display='none';
   checkReady();
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // CATALOG — FOLDER VIEW
 // ══════════════════════════════════════════════════════════════════
@@ -1711,7 +1712,7 @@ function renderImgGrid(){
     pg.appendChild(b);
   }
 }
- 
+
 async function openEntry(code, thumbSrc, driveId){
   if(driveId && storageMode==='drive' && driveToken){
     // Load full image from Drive
@@ -1726,7 +1727,7 @@ async function openEntry(code, thumbSrc, driveId){
     if(thumbSrc) openLbSrc(thumbSrc,code);
   }
 }
- 
+
 async function askDel(code,e){
   e.stopPropagation();
   if(!confirm(`Xoá mã ${code}?`))return;
@@ -1735,7 +1736,7 @@ async function askDel(code,e){
   renderImgGrid();refreshCount();
   status('🗑️ Đã xoá '+code+(storageMode==='drive'?' (Drive + catalog)':''));
 }
- 
+
 async function dlFolder(){
   const code=document.getElementById('breadcrumb').dataset.code||activeFolder;
   if(code) dlFolderByCode(code);
@@ -1771,7 +1772,7 @@ async function dlFolderByCode(themeCode,e){
     status(`✅ Tải thư mục ${th.folder}: ${items.length} ảnh`);
   }
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // LIGHTBOX
 // ══════════════════════════════════════════════════════════════════
@@ -1785,7 +1786,7 @@ function openLbSrc(src,code){
 function closeLb(){document.getElementById('lb').classList.remove('on');}
 function dlLb(){const lb=document.getElementById('lb');const a=document.createElement('a');a.href=lb._src;a.download=(lb._code||'tranh')+'.jpg';a.click();}
 document.getElementById('lb').addEventListener('click',e=>{if(e.target===document.getElementById('lb'))closeLb();});
- 
+
 // ══════════════════════════════════════════════════════════════════
 // LOGO
 // ══════════════════════════════════════════════════════════════════
@@ -1802,13 +1803,13 @@ function removeLogo(){
   document.getElementById('hdr-logo').innerHTML='<span style="font-size:1.2rem">🖼️</span>';
   status('Logo đã được xoá');
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // SETTINGS
 // ══════════════════════════════════════════════════════════════════
 function sThresh(v){THRESH=parseInt(v);document.getElementById('v-thresh').textContent=v;localStorage.setItem('thresh',v);}
 function sWarn(v){WARN=parseInt(v);document.getElementById('v-warn').textContent=v;localStorage.setItem('warn',v);}
- 
+
 async function exportCSV(){
   const data=activeFolder?catData.filter(r=>r.theme_code===activeFolder):catData;
   const rows=[['Mã','Chủ đề','Thư mục','Tên file','Ngày thêm','Drive ID']];
@@ -1841,17 +1842,17 @@ async function clearAll(){
   const all=await dbAll();for(const r of all) await dbDel(r.code);
   catData=[];catFiltered=[];exitFolder();refreshCount();status('🗑️ Đã xoá toàn bộ (offline)');
 }
- 
+
 // ══════════════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════════════
 (async function(){
   // Set current origin hint
   document.getElementById('current-origin').textContent=window.location.origin;
- 
+
   // Open IndexedDB
   try{DB=await openDB();}catch(e){console.error('DB error',e);}
- 
+
   // Restore settings
   const t=localStorage.getItem('thresh');
   if(t){THRESH=parseInt(t);document.getElementById('s-thresh').value=t;document.getElementById('v-thresh').textContent=t;}
@@ -1859,29 +1860,29 @@ async function clearAll(){
   const w=localStorage.getItem('warn');
   if(w){WARN=parseInt(w);document.getElementById('s-warn').value=w;document.getElementById('v-warn').textContent=w;}
   else document.getElementById('s-warn').value=18;
- 
+
   // Restore logo
   const savedLogo=localStorage.getItem('logo');
   if(savedLogo){logoDataURL=savedLogo;showLogo(savedLogo);}
- 
+
   // Restore Replicate key
   replicateKey=localStorage.getItem('replicate_key')||'';
   if(replicateKey){
     document.getElementById('replicate-key').value=replicateKey;
     document.getElementById('replicate-status').textContent='✅ Token đã lưu';
   }
- 
+
   // Restore Drive settings
   driveClientId=localStorage.getItem('drive_client_id')||'';
   driveUserEmail=localStorage.getItem('drive_email')||'';
   driveRootId=localStorage.getItem('drive_root_id')||null;
   driveCatalogFileId=localStorage.getItem('drive_catalog_id')||null;
   try{driveFolderIds=JSON.parse(localStorage.getItem('drive_folder_ids')||'{}');}catch(e){driveFolderIds={};}
- 
+
   const savedMode=localStorage.getItem('storage_mode')||'offline';
   storageMode=savedMode;
   updateStorageUI();
- 
+
   if(savedMode==='drive' && driveClientId){
     // Show connected state optimistically, then silent auth
     document.getElementById('drive-setup-box').style.display='none';
@@ -1893,7 +1894,7 @@ async function clearAll(){
   } else if(driveClientId){
     document.getElementById('drive-client-id').value=driveClientId;
   }
- 
+
   // Build theme grid
   const grid=document.getElementById('theme-grid');
   THEMES.forEach(th=>{
@@ -1905,12 +1906,12 @@ async function clearAll(){
     };
     grid.appendChild(btn);
   });
- 
+
   setMode('single');
   setShMode('single');
   await refreshCount();
 })();
- 
+
 // ══════════════════════════════════════════════════════════════════
 // SHARPEN PAGE STATE & LOGIC
 // ══════════════════════════════════════════════════════════════════
@@ -1918,7 +1919,7 @@ let shMode='single'; // 'single' | 'batch'
 let shOrigURL=null, shResultURL=null, shFile=null;
 let shBatchFiles=[], shBatchResults=[];
 let shCmpDragging=false;
- 
+
 function setShMode(m){
   shMode=m;
   document.getElementById('sh-zone-single').style.display=m==='single'?'block':'none';
@@ -1929,12 +1930,12 @@ function setShMode(m){
   document.getElementById('sh-mode-batch-btn').className='btn '+(m==='batch'?'btn-primary':'btn-ghost');
   checkShReady();
 }
- 
+
 function checkShReady(){
   const ok = sharpenMode!=='off' && (shMode==='single'?!!shOrigURL:shBatchFiles.length>0);
   document.getElementById('sh-btn-go').disabled=!ok;
 }
- 
+
 function setSharpen(mode){
   sharpenMode=mode;
   // Update ALL sharpen buttons (both pages share same IDs)
@@ -1948,10 +1949,10 @@ function setSharpen(mode){
   if(shOrigURL) initShCompare(shOrigURL);
   checkShReady();
 }
- 
+
 function shDropS(e){e.preventDefault();dzl('sh-dz-s');const f=e.dataTransfer.files[0];if(f)shPickSingle(f);}
 function shDropB(e){e.preventDefault();dzl('sh-dz-b');shPickBatch(e.dataTransfer.files);}
- 
+
 async function shPickSingle(f){
   if(!f)return;
   shFile=f; shOrigURL=await readFile(f); shResultURL=null;
@@ -1962,7 +1963,7 @@ async function shPickSingle(f){
   document.getElementById('sh-result-single').style.display='none';
   checkShReady();
 }
- 
+
 function shPickBatch(files){
   shBatchFiles=Array.from(files).slice(0,200);
   shBatchResults=[];
@@ -1971,7 +1972,7 @@ function shPickBatch(files){
   document.getElementById('sh-batch-actions').style.display='none';
   checkShReady();
 }
- 
+
 function initShCompare(beforeURL, afterURL, label){
   if(!afterURL){
     document.getElementById('sh-prev-img').src=beforeURL;
@@ -2012,7 +2013,7 @@ function initShCompare(beforeURL, afterURL, label){
     wrap.addEventListener('touchmove',move,{passive:true});
   }
 }
- 
+
 async function doSharpenProcess(){
   const btn=document.getElementById('sh-btn-go');
   btn.disabled=true;
@@ -2020,7 +2021,7 @@ async function doSharpenProcess(){
   const pf=document.getElementById('sh-prog-fill');
   const pl=document.getElementById('sh-prog-label');
   pw.style.display='block';
- 
+
   try{
     if(shMode==='single'){
       pf.style.width='20%'; pl.textContent='Đang xử lý...';
@@ -2079,14 +2080,14 @@ async function doSharpenProcess(){
     setTimeout(()=>pw.style.display='none',1500);
   }
 }
- 
+
 // Save sharpened file to Drive/local (no SKU code)
 async function shSaveEntry(filename, dataURL){
   const useDrive = storageMode==='drive'||storageMode==='both';
   const useLocal = storageMode==='offline'||storageMode==='both';
   const blob=dataURLToBlob(dataURL);
   const baseName=filename.replace(/\.[^.]+$/,'')+'_sharp.jpg';
- 
+
   if(useDrive){
     await ensureToken();
     // Save to AV Decor Tranh/Lam_Net/ folder
@@ -2098,13 +2099,13 @@ async function shSaveEntry(filename, dataURL){
     // (handled by shDlSingle / shDlZip)
   }
 }
- 
+
 let shDriveFolderId=null;
 async function ensureShDriveFolder(){
   if(!driveRootId) await setupDriveFolders();
   shDriveFolderId=await driveEnsureFolder('Lam_Net', driveRootId);
 }
- 
+
 function dataURLToBlob(dataURL){
   const arr=dataURL.split(','), mime=arr[0].match(/:(.*?);/)[1];
   const bstr=atob(arr[1]); let n=bstr.length;
@@ -2112,7 +2113,7 @@ function dataURLToBlob(dataURL){
   while(n--) u8[n]=bstr.charCodeAt(n);
   return new Blob([u8],{type:mime});
 }
- 
+
 function shDlSingle(){
   if(!shResultURL) return;
   const a=document.createElement('a');
@@ -2120,7 +2121,7 @@ function shDlSingle(){
   a.download=(shFile?.name||'image').replace(/\.[^.]+$/,'')+'_sharp.jpg';
   a.click();
 }
- 
+
 async function shDlZip(){
   const ok=shBatchResults.filter(r=>r.status==='ok');
   if(!ok.length) return;
@@ -2137,7 +2138,7 @@ async function shDlZip(){
   a.click();
   status('✅ Đã tạo ZIP!');
 }
- 
+
 function clearShBatch(){
   shBatchFiles=[]; shBatchResults=[];
   document.getElementById('sh-batch-rows').innerHTML='';
@@ -2146,7 +2147,7 @@ function clearShBatch(){
   document.getElementById('sh-batch-info').textContent='';
   checkShReady();
 }
- 
+
 // Nén ảnh xuống max 1200px (Replicate yêu cầu ảnh không quá lớn)
 function compressForUpscale(dataURL){
   return new Promise(res=>{
@@ -2166,19 +2167,19 @@ function compressForUpscale(dataURL){
     img.src=dataURL;
   });
 }
- 
+
 // AI upscale helper — trả về dataURL đã upscale 4×
 async function doAiUpscaleURL(origURL, pf, pl){
   if(!replicateKey) throw new Error('Chưa có Replicate API token. Vào Cài đặt để nhập.');
   const setMsg=m=>{if(pl){if(typeof pl.textContent!=='undefined')pl.textContent=m;}};
- 
+
   setMsg('⏳ Đang chuẩn bị ảnh...');
   // Nén ảnh trước khi gửi để tránh lỗi payload quá lớn
   const compressedURL=await compressForUpscale(origURL);
- 
+
   setMsg('⏳ Đang gửi lên Replicate...');
   // Tạo prediction
-  const resp=await fetch('https://api.replicate.com/v1/predictions',{
+  const resp=await fetch('https://avdecor-proxy.tuna-mmo93.workers.dev/v1/predictions',{
     method:'POST',
     headers:{
       'Authorization':'Token '+replicateKey,
@@ -2189,22 +2190,22 @@ async function doAiUpscaleURL(origURL, pf, pl){
       input:{image:compressedURL, scale:4, face_enhance:false}
     })
   });
- 
+
   if(!resp.ok){
     let msg='Lỗi '+resp.status;
     try{const e=await resp.json();msg=e.detail||e.error||msg;}catch(x){}
     throw new Error(msg);
   }
- 
+
   let data=await resp.json();
   setMsg('⏳ AI đang xử lý...');
- 
+
   // Poll cho đến khi xong
   let elapsed=0;
   while(data.status!=='succeeded'&&data.status!=='failed'){
     await new Promise(r=>setTimeout(r,3000));
     elapsed+=3;
-    const poll=await fetch('https://api.replicate.com/v1/predictions/'+data.id,{
+    const poll=await fetch('https://avdecor-proxy.tuna-mmo93.workers.dev/v1/predictions/'+data.id,{
       headers:{'Authorization':'Token '+replicateKey}
     });
     data=await poll.json();
@@ -2212,12 +2213,12 @@ async function doAiUpscaleURL(origURL, pf, pl){
     setMsg(`⏳ AI đang xử lý... (${elapsed}s)`);
     if(elapsed>300) throw new Error('Timeout — thử lại sau');
   }
- 
+
   if(data.status==='failed') throw new Error(data.error||'Upscale thất bại');
- 
+
   const outputURL=Array.isArray(data.output)?data.output[0]:data.output;
   if(!outputURL) throw new Error('Không nhận được kết quả');
- 
+
   setMsg('⏳ Đang tải ảnh về...');
   const imgResp=await fetch(outputURL);
   const blob=await imgResp.blob();
