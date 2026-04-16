@@ -352,7 +352,7 @@ canvas{display:none}
       <button class="btn btn-ghost sharpen-btn" id="sh-ai-face" onclick="setSharpen('ai-face')" style="flex:1;min-width:120px">
         <div style="font-size:1.2rem">👤</div>
         <div style="font-size:.8rem;margin-top:4px;font-weight:600">AI Chân dung</div>
-        <div style="font-size:.7rem;color:var(--text3);margin-top:2px">Upscale 4× + phục hồi mặt</div>
+        <div style="font-size:.7rem;color:var(--text3);margin-top:2px">Clarity Upscaler · giữ mặt & tay</div>
       </button>
     </div>
     <div id="sh-ai-warn" style="display:none;margin-top:10px;font-size:.78rem;color:#ffaa44;background:rgba(255,170,68,.08);border:1px solid rgba(255,170,68,.25);border-radius:7px;padding:8px 12px">
@@ -2031,29 +2031,54 @@ function compressForUpscale(dataURL){
   });
 }
 
-// AI upscale helper — trả về dataURL đã upscale 4×
-// faceEnhance: true = bật GFPGAN face restore (cho ảnh chân dung)
+// AI upscale helper — trả về dataURL đã upscale
+// faceEnhance: true = dùng Clarity Upscaler (SD-based, tốt cho chân dung)
+//              false = dùng Real-ESRGAN (nhanh, tốt cho phong cảnh/tĩnh vật)
 async function doAiUpscaleURL(origURL, pf, pl, faceEnhance){
   if(!replicateKey) throw new Error('Chưa có Replicate API token. Vào Cài đặt để nhập.');
-  const useFace = faceEnhance===true;
+  const usePortrait = faceEnhance===true;
   const setMsg=m=>{if(pl){if(typeof pl.textContent!=='undefined')pl.textContent=m;}};
 
-  setMsg(useFace?'⏳ Đang chuẩn bị ảnh (chế độ chân dung)...':'⏳ Đang chuẩn bị ảnh...');
-  // Nén ảnh trước khi gửi để tránh lỗi payload quá lớn
+  setMsg(usePortrait?'⏳ Đang chuẩn bị ảnh (Clarity Upscaler — chân dung)...':'⏳ Đang chuẩn bị ảnh...');
   const compressedURL=await compressForUpscale(origURL);
 
   setMsg('⏳ Đang gửi lên Replicate...');
-  // Tạo prediction
+
+  // Chọn model + payload dựa trên chế độ
+  let body;
+  if(usePortrait){
+    // Clarity Upscaler — SD-based, vẽ lại chi tiết mặt/tay rất tốt
+    body=JSON.stringify({
+      version:'dfad41707589d68ecdccd1dfa600d55a208f9310748e44bfe35b4a6291453d5e',
+      input:{
+        image:compressedURL,
+        scale_factor:4,
+        resemblance:0.75,
+        creativity:0.35,
+        prompt:'high quality portrait photo, detailed face, detailed hands, sharp eyes, natural skin texture',
+        negative_prompt:'blurry, distorted, deformed hands, extra fingers, mutated, disfigured face, low quality',
+        dynamic:6,
+        sd_model:'juggernaut_reborn.safetensors [338b85bc4f]',
+        scheduler:'DPM++ 3M SDE Karras',
+        num_inference_steps:18,
+        output_format:'jpg'
+      }
+    });
+  } else {
+    // Real-ESRGAN — nhanh, tốt cho phong cảnh, hoa, tĩnh vật
+    body=JSON.stringify({
+      version:'f121d640bd286e1fdc67f9799164c1d5be36ff74576ee11c803ae5b665dd46aa',
+      input:{image:compressedURL, scale:4, face_enhance:false}
+    });
+  }
+
   const resp=await fetch('https://avdecor-proxy.tuna-mmo93.workers.dev/v1/predictions',{
     method:'POST',
     headers:{
       'Authorization':'Token '+replicateKey,
       'Content-Type':'application/json'
     },
-    body:JSON.stringify({
-      version:'f121d640bd286e1fdc67f9799164c1d5be36ff74576ee11c803ae5b665dd46aa',
-      input:{image:compressedURL, scale:4, face_enhance:useFace}
-    })
+    body:body
   });
 
   if(!resp.ok){
@@ -2063,7 +2088,7 @@ async function doAiUpscaleURL(origURL, pf, pl, faceEnhance){
   }
 
   let data=await resp.json();
-  setMsg('⏳ AI đang xử lý...');
+  setMsg(usePortrait?'⏳ Clarity Upscaler đang xử lý (có thể mất 30-60s)...':'⏳ AI đang xử lý...');
 
   // Poll cho đến khi xong
   let elapsed=0;
@@ -2075,8 +2100,8 @@ async function doAiUpscaleURL(origURL, pf, pl, faceEnhance){
     });
     data=await poll.json();
     if(pf) pf.style.width=Math.min(20+elapsed,75)+'%';
-    setMsg(`⏳ AI đang xử lý... (${elapsed}s)`);
-    if(elapsed>300) throw new Error('Timeout — thử lại sau');
+    setMsg(usePortrait?`⏳ Clarity Upscaler đang xử lý... (${elapsed}s)`:`⏳ AI đang xử lý... (${elapsed}s)`);
+    if(elapsed>600) throw new Error('Timeout — thử lại sau');
   }
 
   if(data.status==='failed') throw new Error(data.error||'Upscale thất bại');
