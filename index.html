@@ -2147,56 +2147,79 @@ function clearShBatch(){
   checkShReady();
 }
  
-// AI upscale helper that takes/returns dataURL
+// Nén ảnh xuống max 1200px (Replicate yêu cầu ảnh không quá lớn)
+function compressForUpscale(dataURL){
+  return new Promise(res=>{
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=1200;
+      let w=img.width, h=img.height;
+      if(w>MAX||h>MAX){
+        if(w>h){h=Math.round(h*MAX/w);w=MAX;}
+        else{w=Math.round(w*MAX/h);h=MAX;}
+      }
+      const cv=document.createElement('canvas');
+      cv.width=w; cv.height=h;
+      cv.getContext('2d').drawImage(img,0,0,w,h);
+      res(cv.toDataURL('image/jpeg',0.85));
+    };
+    img.src=dataURL;
+  });
+}
+ 
+// AI upscale helper — trả về dataURL đã upscale 4×
 async function doAiUpscaleURL(origURL, pf, pl){
   if(!replicateKey) throw new Error('Chưa có Replicate API token. Vào Cài đặt để nhập.');
+  const setMsg=m=>{if(pl){if(typeof pl.textContent!=='undefined')pl.textContent=m;}};
  
-  const setMsg=m=>{if(pl){if(pl.textContent!==undefined)pl.textContent=m;else pl.innerHTML=m;}};
-  setMsg('⏳ Đang gửi ảnh lên AI...');
+  setMsg('⏳ Đang chuẩn bị ảnh...');
+  // Nén ảnh trước khi gửi để tránh lỗi payload quá lớn
+  const compressedURL=await compressForUpscale(origURL);
  
-  // Dùng endpoint model/owner/name (không cần version hash) + Prefer:wait để sync
-  const endpoint=`https://api.replicate.com/v1/models/${REPLICATE_MODEL}/predictions`;
-  const resp=await fetch(endpoint,{
+  setMsg('⏳ Đang gửi lên Replicate...');
+  // Tạo prediction
+  const resp=await fetch('https://api.replicate.com/v1/predictions',{
     method:'POST',
     headers:{
-      'Authorization':'Bearer '+replicateKey,
-      'Content-Type':'application/json',
-      'Prefer':'wait=60'
+      'Authorization':'Token '+replicateKey,
+      'Content-Type':'application/json'
     },
-    body:JSON.stringify({input:{image:origURL,scale:4,face_enhance:false}})
+    body:JSON.stringify({
+      version:'f121d640bd286e1fdc67f9799164c1d5be36ff74576ee11c803ae5b665dd46aa',
+      input:{image:compressedURL, scale:4, face_enhance:false}
+    })
   });
  
   if(!resp.ok){
-    let msg='API error '+resp.status;
-    try{const e=await resp.json();msg=e.detail||e.error||msg;}catch(e){}
+    let msg='Lỗi '+resp.status;
+    try{const e=await resp.json();msg=e.detail||e.error||msg;}catch(x){}
     throw new Error(msg);
   }
  
   let data=await resp.json();
   setMsg('⏳ AI đang xử lý...');
  
-  // Nếu chưa xong (timeout Prefer:wait), tiếp tục poll
+  // Poll cho đến khi xong
   let elapsed=0;
   while(data.status!=='succeeded'&&data.status!=='failed'){
-    await new Promise(r=>setTimeout(r,2500));
-    elapsed+=2.5;
+    await new Promise(r=>setTimeout(r,3000));
+    elapsed+=3;
     const poll=await fetch('https://api.replicate.com/v1/predictions/'+data.id,{
-      headers:{'Authorization':'Bearer '+replicateKey}
+      headers:{'Authorization':'Token '+replicateKey}
     });
     data=await poll.json();
-    if(pf) pf.style.width=Math.min(20+elapsed*0.8,75)+'%';
-    setMsg(`⏳ AI đang xử lý... (${Math.round(elapsed)}s)`);
+    if(pf) pf.style.width=Math.min(20+elapsed,75)+'%';
+    setMsg(`⏳ AI đang xử lý... (${elapsed}s)`);
+    if(elapsed>300) throw new Error('Timeout — thử lại sau');
   }
  
   if(data.status==='failed') throw new Error(data.error||'Upscale thất bại');
  
-  // Lấy URL output (có thể là string hoặc array)
   const outputURL=Array.isArray(data.output)?data.output[0]:data.output;
-  if(!outputURL) throw new Error('Không nhận được kết quả từ AI');
+  if(!outputURL) throw new Error('Không nhận được kết quả');
  
   setMsg('⏳ Đang tải ảnh về...');
   const imgResp=await fetch(outputURL);
-  if(!imgResp.ok) throw new Error('Không tải được ảnh kết quả');
   const blob=await imgResp.blob();
   return await blobToB64(blob);
 }
