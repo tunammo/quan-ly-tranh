@@ -339,25 +339,20 @@ canvas{display:none}
   <div class="card">
     <div class="card-title">Chế độ xử lý</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn btn-ghost sharpen-btn active" id="sh-off" onclick="setSharpen('off')" style="flex:1;min-width:100px">
+      <button class="btn btn-ghost sharpen-btn active" id="sh-off" onclick="setSharpen('off')" style="flex:1;min-width:120px">
         <div style="font-size:1.2rem">🚫</div>
         <div style="font-size:.8rem;margin-top:4px;font-weight:600">Tắt</div>
-        <div style="font-size:.7rem;color:var(--text3);margin-top:2px">Không làm nét</div>
+        <div style="font-size:.7rem;color:var(--text3);margin-top:2px">Không xử lý</div>
       </button>
-      <button class="btn btn-ghost sharpen-btn" id="sh-portrait" onclick="setSharpen('portrait')" style="flex:1;min-width:100px">
-        <div style="font-size:1.2rem">👤</div>
-        <div style="font-size:.8rem;margin-top:4px;font-weight:600">Chân dung</div>
-        <div style="font-size:.7rem;color:var(--text3);margin-top:2px">Sắc nét cạnh, giữ mịn da</div>
-      </button>
-      <button class="btn btn-ghost sharpen-btn" id="sh-landscape" onclick="setSharpen('landscape')" style="flex:1;min-width:100px">
+      <button class="btn btn-ghost sharpen-btn" id="sh-ai" onclick="setSharpen('ai')" style="flex:1;min-width:120px">
         <div style="font-size:1.2rem">🏔️</div>
-        <div style="font-size:.8rem;margin-top:4px;font-weight:600">Phong cảnh</div>
-        <div style="font-size:.7rem;color:var(--text3);margin-top:2px">Toàn bộ chi tiết sắc nét</div>
+        <div style="font-size:.8rem;margin-top:4px;font-weight:600">AI Phong cảnh</div>
+        <div style="font-size:.7rem;color:var(--text3);margin-top:2px">Upscale 4× · Hoa, cảnh, tĩnh vật</div>
       </button>
-      <button class="btn btn-ghost sharpen-btn" id="sh-ai" onclick="setSharpen('ai')" style="flex:1;min-width:100px">
-        <div style="font-size:1.2rem">🚀</div>
-        <div style="font-size:.8rem;margin-top:4px;font-weight:600">AI Upscale 4×</div>
-        <div style="font-size:.7rem;color:var(--text3);margin-top:2px">Real-ESRGAN, đủ in lớn</div>
+      <button class="btn btn-ghost sharpen-btn" id="sh-ai-face" onclick="setSharpen('ai-face')" style="flex:1;min-width:120px">
+        <div style="font-size:1.2rem">👤</div>
+        <div style="font-size:.8rem;margin-top:4px;font-weight:600">AI Chân dung</div>
+        <div style="font-size:.7rem;color:var(--text3);margin-top:2px">Upscale 4× + phục hồi mặt</div>
       </button>
     </div>
     <div id="sh-ai-warn" style="display:none;margin-top:10px;font-size:.78rem;color:#ffaa44;background:rgba(255,170,68,.08);border:1px solid rgba(255,170,68,.25);border-radius:7px;padding:8px 12px">
@@ -659,7 +654,7 @@ const DRIVE_CATALOG_NAME='catalog.json';
 let DB=null;
 let selTheme=null, mode='single';
 let sFile=null, sDataURL=null, sBlob=null, sCode=null;
-let sharpenMode='off'; // 'off' | 'portrait' | 'landscape'
+let sharpenMode='off'; // 'off' | 'ai' | 'ai-face'
 let sOrigDataURL=null; // raw original before sharpen
 let bFiles=[], bBlobs={}, bResults=[];
 let catData=[], catFiltered=[], catPage=1, activeFolder=null;
@@ -1197,7 +1192,7 @@ async function doAiUpscale(){
   btn.disabled=true; btn.textContent='⏳';
   prog.style.display='inline'; prog.textContent='⏳ Đang gửi ảnh...';
   try{
-    const upscaledURL=await doAiUpscaleURL(sOrigDataURL, null, prog);
+    const upscaledURL=await doAiUpscaleURL(sOrigDataURL, null, prog, sharpenMode==='ai-face');
     const beforeURL=sDataURL||sOrigDataURL;
     sDataURL=upscaledURL;
     showCompare(beforeURL, upscaledURL, '✅ AI Upscale 4× hoàn tất — kéo để so sánh');
@@ -1213,123 +1208,15 @@ async function doAiUpscale(){
 }
 
 // ══════════════════════════════════════════════════════════════════
-// SHARPEN ENGINE
+// (Local sharpen engine removed — AI Upscale only)
 // ══════════════════════════════════════════════════════════════════
-function setSharpen(mode){
-  sharpenMode=mode;
-  document.querySelectorAll('.sharpen-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('sh-'+mode).classList.add('active');
-  // Re-apply to current image if loaded
-  if(sOrigDataURL) applySharpenToPreview(sOrigDataURL);
-}
-
-// Gaussian blur on pixel data (radius 1 = 3x3 kernel)
-function gaussianBlur(data, w, h, radius){
-  const out=new Uint8ClampedArray(data.length);
-  const sigma=radius/2, twoSigSq=2*sigma*sigma;
-  const kSize=radius*2+1;
-  // Separable 1D gaussian
-  const kernel=[];
-  let kSum=0;
-  for(let i=0;i<kSize;i++){
-    const x=i-radius;
-    kernel.push(Math.exp(-(x*x)/twoSigSq));
-    kSum+=kernel[i];
-  }
-  for(let i=0;i<kSize;i++) kernel[i]/=kSum;
-  // Horizontal pass
-  const tmp=new Float32Array(data.length);
-  for(let y=0;y<h;y++){
-    for(let x=0;x<w;x++){
-      let r=0,g=0,b=0;
-      for(let k=0;k<kSize;k++){
-        const sx=Math.min(Math.max(x+k-radius,0),w-1);
-        const idx=(y*w+sx)*4;
-        r+=data[idx]*kernel[k];
-        g+=data[idx+1]*kernel[k];
-        b+=data[idx+2]*kernel[k];
-      }
-      const idx=(y*w+x)*4;
-      tmp[idx]=r; tmp[idx+1]=g; tmp[idx+2]=b; tmp[idx+3]=data[idx+3];
-    }
-  }
-  // Vertical pass
-  for(let y=0;y<h;y++){
-    for(let x=0;x<w;x++){
-      let r=0,g=0,b=0;
-      for(let k=0;k<kSize;k++){
-        const sy=Math.min(Math.max(y+k-radius,0),h-1);
-        const idx=(sy*w+x)*4;
-        r+=tmp[idx]*kernel[k];
-        g+=tmp[idx+1]*kernel[k];
-        b+=tmp[idx+2]*kernel[k];
-      }
-      const idx=(y*w+x)*4;
-      out[idx]=Math.round(r); out[idx+1]=Math.round(g); out[idx+2]=Math.round(b); out[idx+3]=data[idx+3];
-    }
-  }
-  return out;
-}
-
-// High-pass sharpen: original + (original - blurred) * amount, với threshold
-function highPassSharpen(data, w, h, radius, amount, threshold){
-  const blurred=gaussianBlur(data, w, h, radius);
-  const out=new Uint8ClampedArray(data.length);
-  for(let i=0;i<data.length;i+=4){
-    for(let c=0;c<3;c++){
-      const orig=data[i+c], blur=blurred[i+c];
-      const diff=orig-blur;
-      // Only sharpen where difference exceeds threshold (edge areas)
-      if(Math.abs(diff)>threshold){
-        out[i+c]=Math.min(255,Math.max(0,Math.round(orig+diff*amount)));
-      } else {
-        out[i+c]=orig;
-      }
-    }
-    out[i+3]=data[i+3];
-  }
-  return out;
-}
-
-// Main sharpen function — returns sharpened dataURL
-function sharpenDataURL(dataURL, mode){
-  return new Promise(res=>{
-    if(mode==='off'){res(dataURL);return;}
-    const img=new Image();
-    img.onload=()=>{
-      const cv=document.createElement('canvas');
-      cv.width=img.width; cv.height=img.height;
-      const ctx=cv.getContext('2d');
-      ctx.drawImage(img,0,0);
-      const imgData=ctx.getImageData(0,0,cv.width,cv.height);
-      let sharpened;
-      if(mode==='portrait'){
-        // High-pass, gentle: radius=1, amount=0.7, threshold=8
-        // Edge-selective: sharpen eyes/hair/lips, keep skin smooth
-        sharpened=highPassSharpen(imgData.data, cv.width, cv.height, 1, 0.7, 8);
-      } else {
-        // Landscape/still life: radius=1, amount=1.1, threshold=4 (stronger)
-        sharpened=highPassSharpen(imgData.data, cv.width, cv.height, 1, 1.1, 4);
-      }
-      const outData=new ImageData(sharpened, cv.width, cv.height);
-      ctx.putImageData(outData,0,0);
-      res(cv.toDataURL('image/jpeg', 0.95));
-    };
-    img.src=dataURL;
-  });
-}
 
 async function applySharpenToPreview(origURL){
-  if(sharpenMode==='off'){
-    sDataURL=origURL;
-    document.getElementById('prev-img').src=origURL;
-    document.getElementById('prev-box').style.display='block';
-    document.getElementById('compare-box').style.display='none';
-    return;
-  }
-  const sharpened=await sharpenDataURL(origURL, sharpenMode);
-  sDataURL=sharpened;
-  showCompare(origURL, sharpened, '✨ Kéo thanh trượt để so sánh trước/sau');
+  // AI modes don't auto-apply on pick (too slow/costly) — just show original
+  sDataURL=origURL;
+  document.getElementById('prev-img').src=origURL;
+  document.getElementById('prev-box').style.display='block';
+  document.getElementById('compare-box').style.display='none';
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1422,21 +1309,10 @@ async function pickSingle(f){
   aiBtn.disabled=false; aiBtn.textContent='Upscale 4×';
   document.getElementById('ai-prog').style.display='none';
 
-  if(sharpenMode!=='off'){
-    // Show original preview first
-    document.getElementById('prev-img').src=sOrigDataURL;
-    document.getElementById('prev-label').textContent=f.name+' — ⏳ Đang làm nét...';
-    document.getElementById('prev-box').style.display='block';
-    sDataURL=await sharpenDataURL(sOrigDataURL, sharpenMode);
-    // Show compare before/after
-    showCompare(sOrigDataURL, sDataURL,
-      `${f.name} (${Math.round(f.size/1024)} KB) · ✨ Kéo thanh trượt để so sánh trước/sau`);
-  } else {
-    document.getElementById('prev-img').src=sOrigDataURL;
-    document.getElementById('prev-label').textContent=f.name+' ('+Math.round(f.size/1024)+' KB)';
-    document.getElementById('prev-box').style.display='block';
-    document.getElementById('compare-box').style.display='none';
-  }
+  document.getElementById('prev-img').src=sOrigDataURL;
+  document.getElementById('prev-label').textContent=f.name+' ('+Math.round(f.size/1024)+' KB)';
+  document.getElementById('prev-box').style.display='block';
+  document.getElementById('compare-box').style.display='none';
   // Show AI upscale bar if token is set
   document.getElementById('ai-bar').style.display=replicateKey?'flex':'none';
   checkReady();
@@ -1554,11 +1430,6 @@ async function doBatch(){
     setBRow(i,'—','<span class="badge badge-wait">⏳</span>');
     try{
       let dataURL=await readFile(bFiles[i]);
-      // Apply sharpen if mode is on
-      if(sharpenMode!=='off'){
-        document.getElementById('prog-label').textContent=`${i}/${total} · ${bFiles[i].name} ✨`;
-        dataURL=await sharpenDataURL(dataURL, sharpenMode);
-      }
       const hash=await dHash(dataURL);
       const {dist,entry}=await chkDup(hash);
       if(dist<=THRESH&&entry){
@@ -1944,7 +1815,7 @@ function setSharpen(mode){
   if(btn) btn.classList.add('active');
   // Show AI warning if no token
   const warn=document.getElementById('sh-ai-warn');
-  if(warn) warn.style.display=(mode==='ai'&&!replicateKey)?'block':'none';
+  if(warn) warn.style.display=((mode==='ai'||mode==='ai-face')&&!replicateKey)?'block':'none';
   // Re-apply to current single image
   if(shOrigURL) initShCompare(shOrigURL);
   checkShReady();
@@ -2026,11 +1897,7 @@ async function doSharpenProcess(){
     if(shMode==='single'){
       pf.style.width='20%'; pl.textContent='Đang xử lý...';
       let resultURL;
-      if(sharpenMode==='ai'){
-        resultURL=await doAiUpscaleURL(shOrigURL, pf, pl);
-      } else {
-        resultURL=await sharpenDataURL(shOrigURL, sharpenMode);
-      }
+      resultURL=await doAiUpscaleURL(shOrigURL, pf, pl, sharpenMode==='ai-face');
       shResultURL=resultURL;
       pf.style.width='70%'; pl.textContent='Đang lưu...';
       await shSaveEntry(shFile.name, resultURL);
@@ -2055,11 +1922,7 @@ async function doSharpenProcess(){
         try{
           const orig=await readFile(shBatchFiles[i]);
           let result;
-          if(sharpenMode==='ai'){
-            result=await doAiUpscaleURL(orig, pf, pl);
-          } else {
-            result=await sharpenDataURL(orig, sharpenMode);
-          }
+          result=await doAiUpscaleURL(orig, pf, pl, sharpenMode==='ai-face');
           await shSaveEntry(shBatchFiles[i].name, result);
           shBatchResults.push({name:shBatchFiles[i].name, url:result, status:'ok'});
           document.getElementById('sh-bs-'+i).innerHTML='<span class="badge badge-ok">✅</span>';
@@ -2169,11 +2032,13 @@ function compressForUpscale(dataURL){
 }
 
 // AI upscale helper — trả về dataURL đã upscale 4×
-async function doAiUpscaleURL(origURL, pf, pl){
+// faceEnhance: true = bật GFPGAN face restore (cho ảnh chân dung)
+async function doAiUpscaleURL(origURL, pf, pl, faceEnhance){
   if(!replicateKey) throw new Error('Chưa có Replicate API token. Vào Cài đặt để nhập.');
+  const useFace = faceEnhance===true;
   const setMsg=m=>{if(pl){if(typeof pl.textContent!=='undefined')pl.textContent=m;}};
 
-  setMsg('⏳ Đang chuẩn bị ảnh...');
+  setMsg(useFace?'⏳ Đang chuẩn bị ảnh (chế độ chân dung)...':'⏳ Đang chuẩn bị ảnh...');
   // Nén ảnh trước khi gửi để tránh lỗi payload quá lớn
   const compressedURL=await compressForUpscale(origURL);
 
@@ -2187,7 +2052,7 @@ async function doAiUpscaleURL(origURL, pf, pl){
     },
     body:JSON.stringify({
       version:'f121d640bd286e1fdc67f9799164c1d5be36ff74576ee11c803ae5b665dd46aa',
-      input:{image:compressedURL, scale:4, face_enhance:false}
+      input:{image:compressedURL, scale:4, face_enhance:useFace}
     })
   });
 
