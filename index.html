@@ -191,6 +191,28 @@ code{background:var(--bg4);border:1px solid var(--border);border-radius:4px;padd
 .logo-preview{width:60px;height:60px;border-radius:8px;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;overflow:hidden}
 .logo-preview img{width:100%;height:100%;object-fit:contain}
  
+/* ── SHARPEN MODE CARDS ── */
+#page-sharpen .sharpen-btn{padding:12px 8px;text-align:center;border-radius:10px;cursor:pointer;transition:.15s}
+#page-sharpen .sharpen-btn.active{border-color:var(--gold);background:rgba(200,146,58,.12);color:var(--gold2)}
+#page-sharpen .sharpen-btn .em{font-size:1.4rem}
+ 
+/* ── COMPARE SLIDER ── */
+.compare-wrap{position:relative;overflow:hidden;cursor:col-resize;border-radius:8px;user-select:none;touch-action:none}
+.compare-wrap img{display:block;width:100%;height:auto}
+.compare-after-clip{position:absolute;top:0;left:0;width:50%;height:100%;overflow:hidden}
+.compare-after-clip img{width:auto;height:100%;max-width:none;position:absolute;top:0;left:0}
+.compare-before-full{width:100%}
+.compare-handle-line{position:absolute;top:0;left:50%;width:2px;height:100%;background:#fff;transform:translateX(-50%);pointer-events:none}
+.compare-handle-btn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;box-shadow:0 2px 8px rgba(0,0,0,.4);pointer-events:none;color:#333;font-weight:700}
+.compare-label{position:absolute;top:8px;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:4px;pointer-events:none}
+.compare-label.before{left:8px;background:rgba(0,0,0,.6);color:#fff}
+.compare-label.after{right:8px;background:rgba(200,146,58,.9);color:#000}
+ 
+/* ── AI UPSCALE ── */
+.ai-upscale-bar{display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;flex-wrap:wrap}
+.ai-upscale-bar .ai-label{font-size:.78rem;color:var(--text2);flex:1}
+.ai-progress{font-size:.75rem;color:var(--blue2);display:none}
+ 
 /* ── LIGHTBOX ── */
 #lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:12px}
 #lb.on{display:flex}
@@ -223,6 +245,7 @@ canvas{display:none}
 <!-- NAV -->
 <nav class="nav">
   <button class="nav-tab active" onclick="goPage('upload')">📷 Đóng mã</button>
+  <button class="nav-tab" onclick="goPage('sharpen')">✨ Làm nét</button>
   <button class="nav-tab" onclick="goPage('catalog')">📁 Danh mục</button>
   <button class="nav-tab" onclick="goPage('settings')">⚙️ Cài đặt</button>
 </nav>
@@ -238,19 +261,9 @@ canvas{display:none}
  
   <div class="card">
     <div class="card-title">Chọn ảnh</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 14px;flex-wrap:wrap;gap:8px">
-      <div class="btn-row" style="margin:0">
-        <button class="btn btn-ghost" id="mode-single-btn" onclick="setMode('single')">🖼️ Đơn lẻ</button>
-        <button class="btn btn-ghost" id="mode-batch-btn" onclick="setMode('batch')">📦 Hàng loạt</button>
-      </div>
-      <div style="display:flex;align-items:center;gap:7px;font-size:.78rem;color:var(--text2)">
-        <span>✨ Làm nét:</span>
-        <div class="btn-row" style="margin:0;gap:4px">
-          <button class="btn btn-ghost sharpen-btn active" id="sh-off" onclick="setSharpen('off')" style="padding:4px 10px;font-size:.75rem">Tắt</button>
-          <button class="btn btn-ghost sharpen-btn" id="sh-portrait" onclick="setSharpen('portrait')" style="padding:4px 10px;font-size:.75rem">👤 Chân dung</button>
-          <button class="btn btn-ghost sharpen-btn" id="sh-landscape" onclick="setSharpen('landscape')" style="padding:4px 10px;font-size:.75rem">🏔️ Phong cảnh</button>
-        </div>
-      </div>
+    <div class="btn-row" style="margin:0 0 14px">
+      <button class="btn btn-ghost" id="mode-single-btn" onclick="setMode('single')">🖼️ Đơn lẻ</button>
+      <button class="btn btn-ghost" id="mode-batch-btn" onclick="setMode('batch')">📦 Hàng loạt</button>
     </div>
  
     <div id="zone-single">
@@ -260,7 +273,7 @@ canvas{display:none}
         <div>Kéo thả hoặc <strong>click</strong> để chọn ảnh</div>
         <div class="drop-hint">JPG · PNG · WEBP</div>
       </div>
-      <div class="preview-box" id="prev-box">
+      <div class="preview-box" id="prev-box" style="display:none">
         <img id="prev-img" src="">
         <div class="prev-label" id="prev-label"></div>
       </div>
@@ -315,6 +328,124 @@ canvas{display:none}
       <div id="batch-summary" style="font-size:.8rem;color:var(--text2);margin-top:8px"></div>
     </div>
   </div>
+</div>
+ 
+<!-- ════════════════════════════════
+     PAGE: SHARPEN (Làm nét)
+════════════════════════════════ -->
+<div class="page" id="page-sharpen">
+ 
+  <!-- Chế độ làm nét -->
+  <div class="card">
+    <div class="card-title">Chế độ xử lý</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-ghost sharpen-btn active" id="sh-off" onclick="setSharpen('off')" style="flex:1;min-width:100px">
+        <div style="font-size:1.2rem">🚫</div>
+        <div style="font-size:.8rem;margin-top:4px;font-weight:600">Tắt</div>
+        <div style="font-size:.7rem;color:var(--text3);margin-top:2px">Không làm nét</div>
+      </button>
+      <button class="btn btn-ghost sharpen-btn" id="sh-portrait" onclick="setSharpen('portrait')" style="flex:1;min-width:100px">
+        <div style="font-size:1.2rem">👤</div>
+        <div style="font-size:.8rem;margin-top:4px;font-weight:600">Chân dung</div>
+        <div style="font-size:.7rem;color:var(--text3);margin-top:2px">Sắc nét cạnh, giữ mịn da</div>
+      </button>
+      <button class="btn btn-ghost sharpen-btn" id="sh-landscape" onclick="setSharpen('landscape')" style="flex:1;min-width:100px">
+        <div style="font-size:1.2rem">🏔️</div>
+        <div style="font-size:.8rem;margin-top:4px;font-weight:600">Phong cảnh</div>
+        <div style="font-size:.7rem;color:var(--text3);margin-top:2px">Toàn bộ chi tiết sắc nét</div>
+      </button>
+      <button class="btn btn-ghost sharpen-btn" id="sh-ai" onclick="setSharpen('ai')" style="flex:1;min-width:100px">
+        <div style="font-size:1.2rem">🚀</div>
+        <div style="font-size:.8rem;margin-top:4px;font-weight:600">AI Upscale 4×</div>
+        <div style="font-size:.7rem;color:var(--text3);margin-top:2px">Real-ESRGAN, đủ in lớn</div>
+      </button>
+    </div>
+    <div id="sh-ai-warn" style="display:none;margin-top:10px;font-size:.78rem;color:#ffaa44;background:rgba(255,170,68,.08);border:1px solid rgba(255,170,68,.25);border-radius:7px;padding:8px 12px">
+      ⚠️ AI Upscale cần <strong>Replicate API token</strong>. Vào <strong>Cài đặt → AI Upscale</strong> để nhập token.
+    </div>
+  </div>
+ 
+  <!-- Upload -->
+  <div class="card">
+    <div class="card-title">Chọn ảnh</div>
+    <div class="btn-row" style="margin:0 0 14px">
+      <button class="btn btn-ghost" id="sh-mode-single-btn" onclick="setShMode('single')">🖼️ Đơn lẻ</button>
+      <button class="btn btn-ghost" id="sh-mode-batch-btn" onclick="setShMode('batch')">📦 Hàng loạt</button>
+    </div>
+ 
+    <!-- Single -->
+    <div id="sh-zone-single">
+      <div class="drop" id="sh-dz-s" ondragover="dzo(event,'sh-dz-s')" ondragleave="dzl('sh-dz-s')" ondrop="shDropS(event)">
+        <input type="file" accept="image/*" id="sh-file-input" onchange="shPickSingle(this.files[0])" onclick="this.value=''">
+        <span class="drop-icon">🖼️</span>
+        <div>Kéo thả hoặc <strong>click</strong> để chọn ảnh</div>
+        <div class="drop-hint">JPG · PNG · WEBP</div>
+      </div>
+ 
+      <!-- Compare slider -->
+      <div id="sh-compare-box" style="display:none;margin-top:12px">
+        <div class="compare-wrap" id="sh-compare-wrap">
+          <img class="compare-before-full" id="sh-cmp-before" src="">
+          <div class="compare-after-clip" id="sh-cmp-after-clip">
+            <img id="sh-cmp-after" src="">
+          </div>
+          <div class="compare-handle-line" id="sh-cmp-line"></div>
+          <div class="compare-handle-btn">◀▶</div>
+          <div class="compare-label before">Gốc</div>
+          <div class="compare-label after">✨ Đã xử lý</div>
+        </div>
+        <div class="prev-label" id="sh-compare-label" style="margin-top:6px"></div>
+      </div>
+ 
+      <!-- Plain preview (before processing) -->
+      <div class="preview-box" id="sh-prev-box" style="display:none">
+        <img id="sh-prev-img" src="">
+        <div class="prev-label" id="sh-prev-label"></div>
+      </div>
+    </div>
+ 
+    <!-- Batch -->
+    <div id="sh-zone-batch" style="display:none">
+      <div class="drop" id="sh-dz-b" ondragover="dzo(event,'sh-dz-b')" ondragleave="dzl('sh-dz-b')" ondrop="shDropB(event)">
+        <input type="file" accept="image/*" multiple id="sh-batch-input" onchange="shPickBatch(this.files)" onclick="this.value=''">
+        <span class="drop-icon">📂</span>
+        <div>Kéo thả hoặc <strong>click</strong> để chọn nhiều ảnh</div>
+        <div class="drop-hint">Tối đa 200 ảnh một lần</div>
+      </div>
+      <div id="sh-batch-info" style="font-size:.8rem;color:var(--text2);margin-top:8px"></div>
+      <div class="batch-scroll" id="sh-batch-scroll" style="display:none">
+        <div class="brow" style="background:var(--bg3);font-size:.72rem;color:var(--text3);font-weight:700">
+          <span>TÊN FILE</span><span>TRẠNG THÁI</span><span style="text-align:right">KẾT QUẢ</span>
+        </div>
+        <div id="sh-batch-rows"></div>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- Xử lý & Lưu -->
+  <div class="card">
+    <div class="card-title">Lưu kết quả</div>
+    <button class="btn btn-primary btn-full" id="sh-btn-go" onclick="doSharpenProcess()" disabled>✨ Xử lý & Lưu</button>
+    <div class="prog-wrap" id="sh-prog-wrap">
+      <div class="prog-bar"><div class="prog-fill" id="sh-prog-fill" style="width:0%"></div></div>
+      <div class="prog-label" id="sh-prog-label"></div>
+    </div>
+    <!-- Single result -->
+    <div id="sh-result-single" style="display:none;margin-top:12px">
+      <div class="btn-row">
+        <button class="btn btn-primary" id="sh-dl-btn" onclick="shDlSingle()">⬇️ Tải xuống</button>
+      </div>
+    </div>
+    <!-- Batch actions -->
+    <div id="sh-batch-actions" style="display:none;margin-top:12px">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="shDlZip()">📦 Tải tất cả (ZIP)</button>
+        <button class="btn btn-ghost" onclick="clearShBatch()">🗑️ Xoá</button>
+      </div>
+      <div id="sh-batch-summary" style="font-size:.8rem;color:var(--text2);margin-top:8px"></div>
+    </div>
+  </div>
+ 
 </div>
  
 <!-- ════════════════════════════════
@@ -435,6 +566,20 @@ canvas{display:none}
         <div id="drive-err" style="font-size:.78rem;color:#ff7070;margin-top:8px"></div>
       </div>
     </div>
+  </div>
+ 
+  <!-- Replicate API -->
+  <div class="card">
+    <div class="card-title">AI Upscale — Replicate API</div>
+    <div class="info-box" style="margin-bottom:14px">
+      Dùng <strong>Real-ESRGAN</strong> để upscale ảnh 4× — đủ chất lượng in tranh 1m×2m.<br>
+      Tạo tài khoản miễn phí tại <a href="https://replicate.com" target="_blank" style="color:var(--gold2)">replicate.com</a> → vào <strong>Account → API tokens</strong> → copy token.
+    </div>
+    <div class="inp-row">
+      <label>Replicate API Token</label>
+      <input type="password" id="replicate-key" placeholder="r8_xxxxxxxxxxxxxxxxxxxx" oninput="saveReplicateKey(this.value)">
+    </div>
+    <div id="replicate-status" style="font-size:.78rem;margin-top:8px;color:var(--text2)"></div>
   </div>
  
   <!-- Logo -->
@@ -982,6 +1127,120 @@ function readFile(f){return new Promise(res=>{const r=new FileReader();r.onload=
 function blobToB64(blob){return new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(blob);});}
  
 // ══════════════════════════════════════════════════════════════════
+// COMPARE SLIDER
+// ══════════════════════════════════════════════════════════════════
+let cmpDragging=false;
+function initCompare(){
+  const wrap=document.getElementById('compare-wrap');
+  if(!wrap)return;
+  const move=e=>{
+    if(!cmpDragging)return;
+    const r=wrap.getBoundingClientRect();
+    const x=Math.min(Math.max((e.clientX||e.touches[0].clientX)-r.left,0),r.width);
+    const pct=x/r.width*100;
+    document.getElementById('cmp-after-clip').style.width=pct+'%';
+    document.getElementById('cmp-line').style.left=pct+'%';
+    document.querySelector('.compare-handle-btn').style.left=pct+'%';
+  };
+  wrap.addEventListener('mousedown',e=>{cmpDragging=true;move(e);});
+  wrap.addEventListener('touchstart',e=>{cmpDragging=true;move(e);},{passive:true});
+  window.addEventListener('mouseup',()=>cmpDragging=false);
+  window.addEventListener('touchend',()=>cmpDragging=false);
+  wrap.addEventListener('mousemove',move);
+  wrap.addEventListener('touchmove',move,{passive:true});
+}
+ 
+function showCompare(beforeURL, afterURL, label){
+  // Fix after image width to match container
+  const wrap=document.getElementById('compare-wrap');
+  const beforeImg=document.getElementById('cmp-before');
+  const afterImg=document.getElementById('cmp-after');
+  beforeImg.src=beforeURL;
+  afterImg.src=afterURL;
+  // After image needs same width as container for clip to work
+  beforeImg.onload=()=>{
+    afterImg.style.width=wrap.offsetWidth+'px';
+  };
+  // Reset to 50%
+  document.getElementById('cmp-after-clip').style.width='50%';
+  document.getElementById('cmp-line').style.left='50%';
+  document.querySelector('.compare-handle-btn').style.left='50%';
+  document.getElementById('compare-label').textContent=label||'';
+  document.getElementById('compare-box').style.display='block';
+  document.getElementById('prev-box').style.display='none';
+  initCompare();
+}
+ 
+// ══════════════════════════════════════════════════════════════════
+// REPLICATE AI UPSCALE
+// ══════════════════════════════════════════════════════════════════
+let replicateKey='';
+const REPLICATE_MODEL='nightmareai/real-esrgan:42fed1c4974146d4d2414e2be2c5277c7fcf05fcc3a73abf41610695738c1d7b';
+ 
+function saveReplicateKey(v){
+  replicateKey=v.trim();
+  localStorage.setItem('replicate_key',replicateKey);
+  const s=document.getElementById('replicate-status');
+  if(replicateKey) s.textContent='✅ Token đã lưu';
+  else s.textContent='';
+}
+ 
+async function doAiUpscale(){
+  if(!replicateKey){
+    alert('Vui lòng nhập Replicate API token trong Cài đặt trước.');
+    return;
+  }
+  if(!sOrigDataURL){alert('Chưa có ảnh nào được chọn.');return;}
+  const btn=document.getElementById('btn-ai');
+  const prog=document.getElementById('ai-prog');
+  btn.disabled=true; btn.textContent='⏳';
+  prog.style.display='inline';prog.textContent='⏳ Đang gửi ảnh...';
+  try{
+    // Start prediction
+    const resp=await fetch('https://api.replicate.com/v1/predictions',{
+      method:'POST',
+      headers:{'Authorization':'Token '+replicateKey,'Content-Type':'application/json'},
+      body:JSON.stringify({version:REPLICATE_MODEL.split(':')[1],input:{image:sOrigDataURL,scale:4,face_enhance:false}})
+    });
+    if(!resp.ok){const e=await resp.json();throw new Error(e.detail||'API error');}
+    const pred=await resp.json();
+    prog.textContent='⏳ Đang xử lý AI (30-60s)...';
+    // Poll until done
+    let result=null;
+    for(let i=0;i<120;i++){
+      await new Promise(r=>setTimeout(r,2000));
+      const poll=await fetch('https://api.replicate.com/v1/predictions/'+pred.id,{
+        headers:{'Authorization':'Token '+replicateKey}
+      });
+      const data=await poll.json();
+      if(data.status==='succeeded'){result=data.output;break;}
+      if(data.status==='failed'){throw new Error(data.error||'Upscale thất bại');}
+      prog.textContent=`⏳ Đang xử lý AI... (${(i+1)*2}s)`;
+    }
+    if(!result) throw new Error('Timeout sau 4 phút');
+    // Fetch result image as dataURL
+    prog.textContent='⏳ Đang tải ảnh về...';
+    const imgResp=await fetch(result);
+    const blob=await imgResp.blob();
+    const upscaledURL=await blobToB64(blob);
+    // Update state — use upscaled as new working image
+    const beforeURL=sDataURL||sOrigDataURL;
+    sDataURL=upscaledURL;
+    // Show compare
+    showCompare(beforeURL, upscaledURL,
+      `✅ AI Upscale 4× hoàn tất — kéo thanh trượt để so sánh trước/sau`);
+    prog.style.display='none';
+    btn.textContent='✅ Done';
+    status('🚀 AI Upscale 4× hoàn tất! Ảnh đã sẵn sàng đóng mã.');
+  }catch(e){
+    prog.style.display='none';
+    btn.disabled=false;btn.textContent='Upscale 4×';
+    status('❌ AI Upscale lỗi: '+e.message);
+    console.error(e);
+  }
+}
+ 
+// ══════════════════════════════════════════════════════════════════
 // SHARPEN ENGINE
 // ══════════════════════════════════════════════════════════════════
 function setSharpen(mode){
@@ -1089,9 +1348,16 @@ function sharpenDataURL(dataURL, mode){
 }
  
 async function applySharpenToPreview(origURL){
+  if(sharpenMode==='off'){
+    sDataURL=origURL;
+    document.getElementById('prev-img').src=origURL;
+    document.getElementById('prev-box').style.display='block';
+    document.getElementById('compare-box').style.display='none';
+    return;
+  }
   const sharpened=await sharpenDataURL(origURL, sharpenMode);
   sDataURL=sharpened;
-  document.getElementById('prev-img').src=sharpened;
+  showCompare(origURL, sharpened, '✨ Kéo thanh trượt để so sánh trước/sau');
 }
  
 // ══════════════════════════════════════════════════════════════════
@@ -1107,7 +1373,7 @@ function dzDropS(e){e.preventDefault();dzl('dz-s');const f=e.dataTransfer.files[
 function dzDropB(e){e.preventDefault();dzl('dz-b');pickBatch(e.dataTransfer.files);}
 function goPage(name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',['upload','catalog','settings'][i]===name));
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',['upload','sharpen','catalog','settings'][i]===name));
   document.getElementById('page-'+name).classList.add('active');
   if(name==='catalog') loadCat();
 }
@@ -1176,19 +1442,31 @@ async function pickSingle(f){
   if(!f)return;
   sFile=f;
   sOrigDataURL=await readFile(f);
-  // Show label immediately
-  document.getElementById('prev-label').textContent=f.name+' ('+Math.round(f.size/1024)+' KB)';
-  document.getElementById('prev-box').style.display='block';
-  document.getElementById('result-single').style.display='none';
-  // Show original first, then apply sharpen
-  document.getElementById('prev-img').src=sOrigDataURL;
   sDataURL=sOrigDataURL;
+  document.getElementById('result-single').style.display='none';
+  document.getElementById('compare-box').style.display='none';
+  // Reset AI button
+  const aiBtn=document.getElementById('btn-ai');
+  aiBtn.disabled=false; aiBtn.textContent='Upscale 4×';
+  document.getElementById('ai-prog').style.display='none';
+ 
   if(sharpenMode!=='off'){
+    // Show original preview first
+    document.getElementById('prev-img').src=sOrigDataURL;
     document.getElementById('prev-label').textContent=f.name+' — ⏳ Đang làm nét...';
+    document.getElementById('prev-box').style.display='block';
     sDataURL=await sharpenDataURL(sOrigDataURL, sharpenMode);
-    document.getElementById('prev-img').src=sDataURL;
-    document.getElementById('prev-label').textContent=f.name+' ('+Math.round(f.size/1024)+' KB) ✨ Đã làm nét';
+    // Show compare before/after
+    showCompare(sOrigDataURL, sDataURL,
+      `${f.name} (${Math.round(f.size/1024)} KB) · ✨ Kéo thanh trượt để so sánh trước/sau`);
+  } else {
+    document.getElementById('prev-img').src=sOrigDataURL;
+    document.getElementById('prev-label').textContent=f.name+' ('+Math.round(f.size/1024)+' KB)';
+    document.getElementById('prev-box').style.display='block';
+    document.getElementById('compare-box').style.display='none';
   }
+  // Show AI upscale bar if token is set
+  document.getElementById('ai-bar').style.display=replicateKey?'flex':'none';
   checkReady();
 }
  
@@ -1615,6 +1893,13 @@ async function clearAll(){
   const savedLogo=localStorage.getItem('logo');
   if(savedLogo){logoDataURL=savedLogo;showLogo(savedLogo);}
  
+  // Restore Replicate key
+  replicateKey=localStorage.getItem('replicate_key')||'';
+  if(replicateKey){
+    document.getElementById('replicate-key').value=replicateKey;
+    document.getElementById('replicate-status').textContent='✅ Token đã lưu';
+  }
+ 
   // Restore Drive settings
   driveClientId=localStorage.getItem('drive_client_id')||'';
   driveUserEmail=localStorage.getItem('drive_email')||'';
@@ -1651,8 +1936,275 @@ async function clearAll(){
   });
  
   setMode('single');
+  setShMode('single');
   await refreshCount();
 })();
+ 
+// ══════════════════════════════════════════════════════════════════
+// SHARPEN PAGE STATE & LOGIC
+// ══════════════════════════════════════════════════════════════════
+let shMode='single'; // 'single' | 'batch'
+let shOrigURL=null, shResultURL=null, shFile=null;
+let shBatchFiles=[], shBatchResults=[];
+let shCmpDragging=false;
+ 
+function setShMode(m){
+  shMode=m;
+  document.getElementById('sh-zone-single').style.display=m==='single'?'block':'none';
+  document.getElementById('sh-zone-batch').style.display=m==='batch'?'block':'none';
+  document.getElementById('sh-result-single').style.display='none';
+  document.getElementById('sh-batch-actions').style.display='none';
+  document.getElementById('sh-mode-single-btn').className='btn '+(m==='single'?'btn-primary':'btn-ghost');
+  document.getElementById('sh-mode-batch-btn').className='btn '+(m==='batch'?'btn-primary':'btn-ghost');
+  checkShReady();
+}
+ 
+function checkShReady(){
+  const ok = sharpenMode!=='off' && (shMode==='single'?!!shOrigURL:shBatchFiles.length>0);
+  document.getElementById('sh-btn-go').disabled=!ok;
+}
+ 
+function setSharpen(mode){
+  sharpenMode=mode;
+  // Update ALL sharpen buttons (both pages share same IDs)
+  document.querySelectorAll('.sharpen-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('sh-'+mode);
+  if(btn) btn.classList.add('active');
+  // Show AI warning if no token
+  const warn=document.getElementById('sh-ai-warn');
+  if(warn) warn.style.display=(mode==='ai'&&!replicateKey)?'block':'none';
+  // Re-apply to current single image
+  if(shOrigURL) initShCompare(shOrigURL);
+  checkShReady();
+}
+ 
+function shDropS(e){e.preventDefault();dzl('sh-dz-s');const f=e.dataTransfer.files[0];if(f)shPickSingle(f);}
+function shDropB(e){e.preventDefault();dzl('sh-dz-b');shPickBatch(e.dataTransfer.files);}
+ 
+async function shPickSingle(f){
+  if(!f)return;
+  shFile=f; shOrigURL=await readFile(f); shResultURL=null;
+  document.getElementById('sh-prev-img').src=shOrigURL;
+  document.getElementById('sh-prev-label').textContent=f.name+' ('+Math.round(f.size/1024)+' KB)';
+  document.getElementById('sh-prev-box').style.display='block';
+  document.getElementById('sh-compare-box').style.display='none';
+  document.getElementById('sh-result-single').style.display='none';
+  checkShReady();
+}
+ 
+function shPickBatch(files){
+  shBatchFiles=Array.from(files).slice(0,200);
+  shBatchResults=[];
+  document.getElementById('sh-batch-info').textContent=`Đã chọn ${shBatchFiles.length} ảnh`;
+  document.getElementById('sh-batch-scroll').style.display='none';
+  document.getElementById('sh-batch-actions').style.display='none';
+  checkShReady();
+}
+ 
+function initShCompare(beforeURL, afterURL, label){
+  if(!afterURL){
+    document.getElementById('sh-prev-img').src=beforeURL;
+    document.getElementById('sh-prev-box').style.display='block';
+    document.getElementById('sh-compare-box').style.display='none';
+    return;
+  }
+  const wrap=document.getElementById('sh-compare-wrap');
+  const bi=document.getElementById('sh-cmp-before');
+  const ai=document.getElementById('sh-cmp-after');
+  bi.src=beforeURL; ai.src=afterURL;
+  bi.onload=()=>{ai.style.width=wrap.offsetWidth+'px';};
+  document.getElementById('sh-cmp-after-clip').style.width='50%';
+  document.getElementById('sh-cmp-line').style.left='50%';
+  const hBtn=wrap.querySelector('.compare-handle-btn');
+  if(hBtn) hBtn.style.left='50%';
+  document.getElementById('sh-compare-label').textContent=label||'';
+  document.getElementById('sh-compare-box').style.display='block';
+  document.getElementById('sh-prev-box').style.display='none';
+  // Init drag
+  if(!wrap._cmpInited){
+    wrap._cmpInited=true;
+    const move=e=>{
+      if(!shCmpDragging)return;
+      const r=wrap.getBoundingClientRect();
+      const x=Math.min(Math.max((e.clientX||e.touches[0].clientX)-r.left,0),r.width);
+      const pct=x/r.width*100;
+      document.getElementById('sh-cmp-after-clip').style.width=pct+'%';
+      document.getElementById('sh-cmp-line').style.left=pct+'%';
+      const h=wrap.querySelector('.compare-handle-btn');
+      if(h) h.style.left=pct+'%';
+    };
+    wrap.addEventListener('mousedown',e=>{shCmpDragging=true;move(e);});
+    wrap.addEventListener('touchstart',e=>{shCmpDragging=true;move(e);},{passive:true});
+    window.addEventListener('mouseup',()=>shCmpDragging=false);
+    window.addEventListener('touchend',()=>shCmpDragging=false);
+    wrap.addEventListener('mousemove',move);
+    wrap.addEventListener('touchmove',move,{passive:true});
+  }
+}
+ 
+async function doSharpenProcess(){
+  const btn=document.getElementById('sh-btn-go');
+  btn.disabled=true;
+  const pw=document.getElementById('sh-prog-wrap');
+  const pf=document.getElementById('sh-prog-fill');
+  const pl=document.getElementById('sh-prog-label');
+  pw.style.display='block';
+ 
+  try{
+    if(shMode==='single'){
+      pf.style.width='20%'; pl.textContent='Đang xử lý...';
+      let resultURL;
+      if(sharpenMode==='ai'){
+        resultURL=await doAiUpscaleURL(shOrigURL, pf, pl);
+      } else {
+        resultURL=await sharpenDataURL(shOrigURL, sharpenMode);
+      }
+      shResultURL=resultURL;
+      pf.style.width='70%'; pl.textContent='Đang lưu...';
+      await shSaveEntry(shFile.name, resultURL);
+      pf.style.width='100%';
+      initShCompare(shOrigURL, resultURL, '✨ Kéo thanh trượt để so sánh · Đã lưu thành công');
+      document.getElementById('sh-result-single').style.display='block';
+      status('✅ Đã xử lý & lưu: '+shFile.name);
+    } else {
+      // Batch
+      const total=shBatchFiles.length;
+      const rows=document.getElementById('sh-batch-rows');
+      rows.innerHTML='';
+      document.getElementById('sh-batch-scroll').style.display='block';
+      shBatchResults=[];
+      for(let i=0;i<total;i++){
+        pf.style.width=Math.round(i/total*100)+'%';
+        pl.textContent=`${i+1}/${total} · ${shBatchFiles[i].name}`;
+        const tr=document.createElement('div');
+        tr.className='brow'; tr.id='sh-brow-'+i;
+        tr.innerHTML=`<span style="font-size:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${shBatchFiles[i].name}</span><span id="sh-bs-${i}"><span class="badge badge-wait">⏳</span></span><span></span>`;
+        rows.appendChild(tr);
+        try{
+          const orig=await readFile(shBatchFiles[i]);
+          let result;
+          if(sharpenMode==='ai'){
+            result=await doAiUpscaleURL(orig, pf, pl);
+          } else {
+            result=await sharpenDataURL(orig, sharpenMode);
+          }
+          await shSaveEntry(shBatchFiles[i].name, result);
+          shBatchResults.push({name:shBatchFiles[i].name, url:result, status:'ok'});
+          document.getElementById('sh-bs-'+i).innerHTML='<span class="badge badge-ok">✅</span>';
+        }catch(e){
+          shBatchResults.push({name:shBatchFiles[i].name, url:null, status:'err'});
+          document.getElementById('sh-bs-'+i).innerHTML='<span class="badge badge-dup">❌</span>';
+        }
+      }
+      pf.style.width='100%'; pl.textContent='Hoàn tất!';
+      const ok=shBatchResults.filter(r=>r.status==='ok').length;
+      document.getElementById('sh-batch-summary').textContent=`✅ ${ok}/${total} ảnh đã xử lý & lưu`;
+      document.getElementById('sh-batch-actions').style.display='block';
+    }
+  }catch(e){
+    status('❌ Lỗi: '+e.message); console.error(e);
+  }finally{
+    btn.disabled=false;
+    setTimeout(()=>pw.style.display='none',1500);
+  }
+}
+ 
+// Save sharpened file to Drive/local (no SKU code)
+async function shSaveEntry(filename, dataURL){
+  const useDrive = storageMode==='drive'||storageMode==='both';
+  const useLocal = storageMode==='offline'||storageMode==='both';
+  const blob=dataURLToBlob(dataURL);
+  const baseName=filename.replace(/\.[^.]+$/,'')+'_sharp.jpg';
+ 
+  if(useDrive){
+    await ensureToken();
+    // Save to AV Decor Tranh/Lam_Net/ folder
+    if(!shDriveFolderId) await ensureShDriveFolder();
+    await driveUploadImage(blob, baseName, shDriveFolderId);
+  }
+  if(useLocal){
+    // For local: store in a simple array for batch download, or auto-download for single
+    // (handled by shDlSingle / shDlZip)
+  }
+}
+ 
+let shDriveFolderId=null;
+async function ensureShDriveFolder(){
+  if(!driveRootId) await setupDriveFolders();
+  shDriveFolderId=await driveEnsureFolder('Lam_Net', driveRootId);
+}
+ 
+function dataURLToBlob(dataURL){
+  const arr=dataURL.split(','), mime=arr[0].match(/:(.*?);/)[1];
+  const bstr=atob(arr[1]); let n=bstr.length;
+  const u8=new Uint8ClampedArray(n);
+  while(n--) u8[n]=bstr.charCodeAt(n);
+  return new Blob([u8],{type:mime});
+}
+ 
+function shDlSingle(){
+  if(!shResultURL) return;
+  const a=document.createElement('a');
+  a.href=shResultURL;
+  a.download=(shFile?.name||'image').replace(/\.[^.]+$/,'')+'_sharp.jpg';
+  a.click();
+}
+ 
+async function shDlZip(){
+  const ok=shBatchResults.filter(r=>r.status==='ok');
+  if(!ok.length) return;
+  status('📦 Đang tạo ZIP...');
+  const zip=new JSZip();
+  for(const r of ok){
+    const base64=r.url.split(',')[1];
+    zip.file(r.name.replace(/\.[^.]+$/,'')+'_sharp.jpg', base64, {base64:true});
+  }
+  const blob=await zip.generateAsync({type:'blob'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='lam_net_'+Date.now()+'.zip';
+  a.click();
+  status('✅ Đã tạo ZIP!');
+}
+ 
+function clearShBatch(){
+  shBatchFiles=[]; shBatchResults=[];
+  document.getElementById('sh-batch-rows').innerHTML='';
+  document.getElementById('sh-batch-scroll').style.display='none';
+  document.getElementById('sh-batch-actions').style.display='none';
+  document.getElementById('sh-batch-info').textContent='';
+  checkShReady();
+}
+ 
+// AI upscale helper that takes/returns dataURL (for sharpen page)
+async function doAiUpscaleURL(origURL, pf, pl){
+  if(!replicateKey) throw new Error('Chưa có Replicate API token. Vào Cài đặt để nhập.');
+  if(pl) pl.textContent='⏳ Đang gửi ảnh lên AI...';
+  const resp=await fetch('https://api.replicate.com/v1/predictions',{
+    method:'POST',
+    headers:{'Authorization':'Token '+replicateKey,'Content-Type':'application/json'},
+    body:JSON.stringify({version:REPLICATE_MODEL.split(':')[1],input:{image:origURL,scale:4,face_enhance:false}})
+  });
+  if(!resp.ok){const e=await resp.json();throw new Error(e.detail||'API error');}
+  const pred=await resp.json();
+  for(let i=0;i<120;i++){
+    await new Promise(r=>setTimeout(r,2000));
+    const poll=await fetch('https://api.replicate.com/v1/predictions/'+pred.id,{
+      headers:{'Authorization':'Token '+replicateKey}
+    });
+    const data=await poll.json();
+    if(data.status==='succeeded'){
+      if(pl) pl.textContent='⏳ Đang tải ảnh về...';
+      const imgResp=await fetch(data.output);
+      const blob=await imgResp.blob();
+      return await blobToB64(blob);
+    }
+    if(data.status==='failed') throw new Error(data.error||'Upscale thất bại');
+    if(pf) pf.style.width=Math.min(20+(i+1)*0.6,65)+'%';
+    if(pl) pl.textContent=`⏳ AI đang xử lý... (${(i+1)*2}s)`;
+  }
+  throw new Error('Timeout sau 4 phút');
+}
 </script>
 </body>
 </html>
