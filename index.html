@@ -245,6 +245,7 @@ canvas{display:none}
 <!-- NAV -->
 <nav class="nav">
   <button class="nav-tab active" onclick="goPage('upload')">📷 Đóng mã</button>
+  <button class="nav-tab" onclick="goPage('dupcheck')">🔍 Check trùng</button>
   <button class="nav-tab" onclick="goPage('sharpen')">✨ Làm nét</button>
   <button class="nav-tab" onclick="goPage('catalog')">📁 Danh mục</button>
   <button class="nav-tab" onclick="goPage('settings')">⚙️ Cài đặt</button>
@@ -326,6 +327,111 @@ canvas{display:none}
         <button class="btn btn-ghost" onclick="clearBatch()">🗑️ Xoá batch</button>
       </div>
       <div id="batch-summary" style="font-size:.8rem;color:var(--text2);margin-top:8px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     PAGE: DUPCHECK (Check trùng)
+════════════════════════════════ -->
+<div class="page" id="page-dupcheck">
+
+  <!-- Chế độ -->
+  <div class="card">
+    <div class="card-title">🔍 Kiểm tra ảnh trùng</div>
+    <div style="font-size:.8rem;color:var(--text2);margin-bottom:12px">So sánh ảnh trên ổ cứng với toàn bộ ảnh đã đóng mã (dùng dHash perceptual hash)</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost" id="dc-mode-single-btn" onclick="setDcMode('single')" style="flex:1">🖼️ Check 1 ảnh</button>
+      <button class="btn btn-ghost" id="dc-mode-batch-btn" onclick="setDcMode('batch')" style="flex:1">📦 Quét hàng loạt</button>
+    </div>
+  </div>
+
+  <!-- Single check -->
+  <div id="dc-zone-single" style="display:none">
+    <div class="card">
+      <div class="card-title">Chọn ảnh cần kiểm tra</div>
+      <div class="dropzone" id="dc-dz-s"
+        ondragover="event.preventDefault();dzo(event,'dc-dz-s')"
+        ondragleave="dzl('dc-dz-s')"
+        ondrop="dcDropS(event)"
+        onclick="document.getElementById('dc-file-s').click()">
+        <div class="dz-icon">🖼️</div>
+        <div class="dz-text">Kéo thả hoặc click để chọn ảnh</div>
+        <div class="dz-sub">JPG · PNG · WEBP</div>
+      </div>
+      <input type="file" id="dc-file-s" accept="image/*" onchange="dcPickSingle(this.files[0])" hidden>
+    </div>
+
+    <!-- Preview + kết quả single -->
+    <div id="dc-result-single" style="display:none">
+      <div class="card">
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+          <div style="flex:0 0 auto">
+            <img id="dc-prev-img" style="max-width:180px;max-height:180px;border-radius:8px;border:1px solid var(--border)">
+          </div>
+          <div style="flex:1;min-width:200px">
+            <div id="dc-prev-name" style="font-size:.85rem;font-weight:600;margin-bottom:6px"></div>
+            <div id="dc-single-status" style="font-size:.85rem;margin-bottom:10px"></div>
+            <div id="dc-single-match" style="display:none">
+              <div style="font-size:.78rem;color:var(--text2);margin-bottom:4px">Ảnh giống nhất trong danh mục:</div>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px">
+                <img id="dc-match-img" style="width:80px;height:80px;object-fit:cover;border-radius:6px">
+                <div>
+                  <div id="dc-match-code" style="font-weight:700;color:var(--gold2);font-size:.95rem"></div>
+                  <div id="dc-match-info" style="font-size:.75rem;color:var(--text2);margin-top:2px"></div>
+                  <div id="dc-match-pct" style="font-size:.85rem;margin-top:4px"></div>
+                </div>
+              </div>
+            </div>
+            <div id="dc-single-nomatch" style="display:none">
+              <div style="font-size:.95rem;color:var(--green2);font-weight:600">✅ Không trùng — ảnh mới 100%</div>
+              <div id="dc-nearest-info" style="font-size:.75rem;color:var(--text3);margin-top:4px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Batch scan -->
+  <div id="dc-zone-batch" style="display:none">
+    <div class="card">
+      <div class="card-title">Chọn nhiều ảnh để quét</div>
+      <div class="dropzone" id="dc-dz-b"
+        ondragover="event.preventDefault();dzo(event,'dc-dz-b')"
+        ondragleave="dzl('dc-dz-b')"
+        ondrop="dcDropB(event)"
+        onclick="document.getElementById('dc-file-b').click()">
+        <div class="dz-icon">📁</div>
+        <div class="dz-text">Kéo thả hoặc chọn nhiều ảnh</div>
+        <div class="dz-sub">Chọn toàn bộ ảnh trong thư mục</div>
+      </div>
+      <input type="file" id="dc-file-b" accept="image/*" multiple onchange="dcPickBatch(this.files)" hidden>
+      <div id="dc-batch-info" style="display:none;margin-top:10px;font-size:.85rem;color:var(--text2)"></div>
+      <button class="btn btn-primary" id="dc-btn-scan" onclick="dcScanBatch()" disabled style="margin-top:12px;width:100%">🔍 Bắt đầu quét</button>
+    </div>
+
+    <!-- Progress -->
+    <div id="dc-prog-wrap" style="display:none" class="card">
+      <div class="prog"><div class="prog-fill" id="dc-prog-fill"></div></div>
+      <div class="prog-label" id="dc-prog-label"></div>
+    </div>
+
+    <!-- Kết quả batch -->
+    <div id="dc-batch-result" style="display:none">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <div class="card-title" style="margin:0" id="dc-batch-summary"></div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost" style="font-size:.75rem;padding:4px 10px" onclick="dcFilterResult('all')">Tất cả</button>
+            <button class="btn btn-ghost" style="font-size:.75rem;padding:4px 10px;color:#ff6b6b" onclick="dcFilterResult('dup')">🔁 Trùng</button>
+            <button class="btn btn-ghost" style="font-size:.75rem;padding:4px 10px;color:var(--green2)" onclick="dcFilterResult('ok')">✅ Mới</button>
+          </div>
+        </div>
+        <div id="dc-batch-scroll" style="max-height:500px;overflow-y:auto">
+          <div id="dc-batch-rows"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1232,7 +1338,8 @@ function dzDropS(e){e.preventDefault();dzl('dz-s');const f=e.dataTransfer.files[
 function dzDropB(e){e.preventDefault();dzl('dz-b');pickBatch(e.dataTransfer.files);}
 function goPage(name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',['upload','sharpen','catalog','settings'][i]===name));
+  const tabs=['upload','dupcheck','sharpen','catalog','settings'];
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===name));
   document.getElementById('page-'+name).classList.add('active');
   if(name==='catalog') loadCat();
 }
@@ -2105,6 +2212,177 @@ async function doAiUpscaleURL(origURL, pf, pl, faceEnhance){
   const imgResp=await fetch(restoredRemoteURL);
   const blob=await imgResp.blob();
   return await blobToB64(blob);
+}
+// ══════════════════════════════════════════════════════════════════
+// DUPCHECK (Check trùng)
+// ══════════════════════════════════════════════════════════════════
+let dcMode=''; // 'single' | 'batch'
+let dcBatchFiles=[];
+let dcBatchResults=[];
+
+function setDcMode(m){
+  dcMode=m;
+  document.getElementById('dc-zone-single').style.display=m==='single'?'block':'none';
+  document.getElementById('dc-zone-batch').style.display=m==='batch'?'block':'none';
+  document.getElementById('dc-mode-single-btn').className='btn '+(m==='single'?'btn-primary':'btn-ghost');
+  document.getElementById('dc-mode-batch-btn').className='btn '+(m==='batch'?'btn-primary':'btn-ghost');
+  // Reset
+  document.getElementById('dc-result-single').style.display='none';
+  document.getElementById('dc-batch-result').style.display='none';
+}
+
+function dcDropS(e){e.preventDefault();dzl('dc-dz-s');const f=e.dataTransfer.files[0];if(f)dcPickSingle(f);}
+function dcDropB(e){e.preventDefault();dzl('dc-dz-b');dcPickBatch(e.dataTransfer.files);}
+
+// ── Check 1 file ──
+async function dcPickSingle(f){
+  if(!f)return;
+  document.getElementById('dc-result-single').style.display='none';
+  document.getElementById('dc-prev-name').textContent=f.name+' ('+Math.round(f.size/1024)+' KB) — ⏳ Đang kiểm tra...';
+  const dataURL=await readFile(f);
+  document.getElementById('dc-prev-img').src=dataURL;
+  document.getElementById('dc-result-single').style.display='block';
+
+  // Hash & compare
+  const hash=await dHash(dataURL);
+  const all=await loadAllEntries();
+
+  // Find best match
+  let best=64,bestE=null;
+  for(const e of all){if(!e.hash)continue;const d=hamming(hash,e.hash);if(d<best){best=d;bestE=e;}}
+
+  document.getElementById('dc-prev-name').textContent=f.name+' ('+Math.round(f.size/1024)+' KB)';
+
+  if(best<=THRESH&&bestE){
+    // Trùng!
+    document.getElementById('dc-single-status').innerHTML='<span style="color:#ff6b6b;font-weight:700;font-size:1rem">🔁 ẢNH TRÙNG!</span>';
+    document.getElementById('dc-single-match').style.display='block';
+    document.getElementById('dc-single-nomatch').style.display='none';
+    document.getElementById('dc-match-code').textContent=bestE.code;
+    document.getElementById('dc-match-info').textContent=(bestE.theme||'')+' · '+(bestE.filename||bestE.code+'.jpg');
+    document.getElementById('dc-match-pct').innerHTML='Giống <strong style="color:#ff6b6b">'+sim(best)+'%</strong> · Hamming='+best;
+    // Thumbnail
+    const thumb=bestE.imgData||bestE.thumb_url||'';
+    document.getElementById('dc-match-img').src=thumb;
+    document.getElementById('dc-match-img').style.display=thumb?'block':'none';
+  } else if(best<=WARN&&bestE){
+    // Gần giống
+    document.getElementById('dc-single-status').innerHTML='<span style="color:#ffaa44;font-weight:700;font-size:1rem">⚠️ CÓ ẢNH GẦN GIỐNG</span>';
+    document.getElementById('dc-single-match').style.display='block';
+    document.getElementById('dc-single-nomatch').style.display='none';
+    document.getElementById('dc-match-code').textContent=bestE.code;
+    document.getElementById('dc-match-info').textContent=(bestE.theme||'')+' · '+(bestE.filename||bestE.code+'.jpg');
+    document.getElementById('dc-match-pct').innerHTML='Giống <strong style="color:#ffaa44">'+sim(best)+'%</strong> · Hamming='+best+' (gần ngưỡng)';
+    const thumb=bestE.imgData||bestE.thumb_url||'';
+    document.getElementById('dc-match-img').src=thumb;
+    document.getElementById('dc-match-img').style.display=thumb?'block':'none';
+  } else {
+    // Không trùng
+    document.getElementById('dc-single-status').innerHTML='';
+    document.getElementById('dc-single-match').style.display='none';
+    document.getElementById('dc-single-nomatch').style.display='block';
+    if(bestE){
+      document.getElementById('dc-nearest-info').textContent='Ảnh gần nhất: '+bestE.code+' ('+sim(best)+'% giống · Hamming='+best+')';
+    } else {
+      document.getElementById('dc-nearest-info').textContent='Chưa có ảnh nào trong danh mục để so sánh';
+    }
+  }
+}
+
+// ── Quét hàng loạt ──
+function dcPickBatch(files){
+  dcBatchFiles=Array.from(files).filter(f=>f.type.startsWith('image/'));
+  if(!dcBatchFiles.length){alert('Không tìm thấy file ảnh nào');return;}
+  document.getElementById('dc-batch-info').style.display='block';
+  document.getElementById('dc-batch-info').textContent='📂 '+dcBatchFiles.length+' ảnh đã chọn — sẵn sàng quét';
+  document.getElementById('dc-btn-scan').disabled=false;
+  document.getElementById('dc-batch-result').style.display='none';
+}
+
+async function dcScanBatch(){
+  const total=dcBatchFiles.length;
+  if(!total)return;
+  const btn=document.getElementById('dc-btn-scan');
+  btn.disabled=true; btn.textContent='⏳ Đang quét...';
+  const pw=document.getElementById('dc-prog-wrap');
+  const pf=document.getElementById('dc-prog-fill');
+  const pl=document.getElementById('dc-prog-label');
+  pw.style.display='block';
+
+  // Load all entries once
+  const all=await loadAllEntries();
+  dcBatchResults=[];
+  const rows=document.getElementById('dc-batch-rows');
+  rows.innerHTML='';
+
+  for(let i=0;i<total;i++){
+    pf.style.width=Math.round(i/total*100)+'%';
+    pl.textContent=`${i+1}/${total} · ${dcBatchFiles[i].name}`;
+    try{
+      const dataURL=await readFile(dcBatchFiles[i]);
+      const hash=await dHash(dataURL);
+
+      // Find best match
+      let best=64,bestE=null;
+      for(const e of all){if(!e.hash)continue;const d=hamming(hash,e.hash);if(d<best){best=d;bestE=e;}}
+
+      const isDup=best<=THRESH&&bestE;
+      const isWarn=best<=WARN&&bestE;
+      dcBatchResults.push({
+        name:dcBatchFiles[i].name,
+        hash,
+        dist:best,
+        match:bestE,
+        status:isDup?'dup':(isWarn?'warn':'ok')
+      });
+
+      // Render row
+      const row=document.createElement('div');
+      row.className='brow';
+      row.dataset.status=isDup?'dup':(isWarn?'warn':'ok');
+      let badge,detail;
+      if(isDup){
+        badge='<span class="badge badge-dup">🔁 '+sim(best)+'%</span>';
+        detail='<span style="color:var(--gold2)">'+bestE.code+'</span>';
+      } else if(isWarn){
+        badge='<span class="badge badge-near" style="font-size:.7rem">⚠️ ~'+sim(best)+'%</span>';
+        detail='<span style="color:var(--text2)">'+bestE.code+'</span>';
+      } else {
+        badge='<span class="badge badge-ok">✅ Mới</span>';
+        detail='';
+      }
+      row.innerHTML='<span style="font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">'+dcBatchFiles[i].name+'</span><span>'+detail+'</span><span>'+badge+'</span>';
+      rows.appendChild(row);
+    }catch(e){
+      dcBatchResults.push({name:dcBatchFiles[i].name,status:'err'});
+      const row=document.createElement('div');
+      row.className='brow'; row.dataset.status='err';
+      row.innerHTML='<span style="font-size:.78rem">'+dcBatchFiles[i].name+'</span><span></span><span><span class="badge badge-err">❌</span></span>';
+      rows.appendChild(row);
+    }
+  }
+
+  pf.style.width='100%'; pl.textContent='Hoàn tất!';
+
+  // Summary
+  const dups=dcBatchResults.filter(r=>r.status==='dup').length;
+  const warns=dcBatchResults.filter(r=>r.status==='warn').length;
+  const oks=dcBatchResults.filter(r=>r.status==='ok').length;
+  document.getElementById('dc-batch-summary').textContent=
+    `📊 ${total} ảnh · 🔁 ${dups} trùng · ⚠️ ${warns} gần giống · ✅ ${oks} mới`;
+
+  document.getElementById('dc-batch-result').style.display='block';
+  btn.disabled=false; btn.textContent='🔍 Quét lại';
+  status(`🔍 Đã quét ${total} ảnh: ${dups} trùng, ${warns} cảnh báo, ${oks} mới`);
+}
+
+function dcFilterResult(filter){
+  const rows=document.getElementById('dc-batch-rows').children;
+  for(const row of rows){
+    if(filter==='all') row.style.display='';
+    else if(filter==='dup') row.style.display=(row.dataset.status==='dup'||row.dataset.status==='warn')?'':'none';
+    else if(filter==='ok') row.style.display=row.dataset.status==='ok'?'':'none';
+  }
 }
 </script>
 </body>
