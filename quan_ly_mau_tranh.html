@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quản Lý Mẫu Tranh — AV Decor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#c8923a;--gold2:#ffd275;--gold3:#e0a848;
+  --bg:#0d0c09;--bg2:#161410;--bg3:#1e1b14;--bg4:#26221a;
+  --border:#2e2818;--border2:#3d3420;
+  --text:#ede0c4;--text2:#9a8660;--text3:#6a5a3a;
+  --green:#3a8a3a;--green2:#6de06d;
+  --blue:#2a5a8a;--blue2:#70b0f0;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:60px}
+
+/* ── HEADER ── */
+.header{background:linear-gradient(135deg,#120f07,#1e1608 60%,#2a1e0a);border-bottom:1px solid var(--gold);padding:0 28px;height:58px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:50}
+.header h1{font-size:1.15rem;font-weight:700;color:var(--gold2);letter-spacing:.03em}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:.78rem;color:var(--text2)}
+.hstat{display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(200,146,58,.08);border:1px solid var(--border2);border-radius:20px;white-space:nowrap}
+.hstat.green{background:rgba(60,180,60,.1);border-color:var(--green)}
+.hstat.blue{background:rgba(42,90,138,.15);border-color:var(--blue)}
+
+/* ── NAV ── */
+.nav{display:flex;gap:2px;padding:0 28px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:58px;z-index:40}
+.nav-tab{padding:11px 20px;font-size:.85rem;cursor:pointer;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;transition:.15s;white-space:nowrap}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--gold2);border-bottom-color:var(--gold);font-weight:600}
+
+/* ── LAYOUT ── */
+.page{display:none;padding:24px 28px;max-width:1100px}
+.page.active{display:block}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.card-title{font-size:.82rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.card-title::before{content:'';display:block;width:3px;height:14px;background:var(--gold);border-radius:2px}
+
+/* ── THEME GRID ── */
+.theme-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+@media(max-width:600px){.theme-grid{grid-template-columns:repeat(3,1fr)}}
+.theme-btn{background:var(--bg3);border:1.5px solid var(--border2);border-radius:10px;padding:11px 6px 9px;cursor:pointer;text-align:center;transition:.15s;color:var(--text2)}
+.theme-btn:hover{border-color:var(--gold);color:var(--text)}
+.theme-btn.sel{border-color:var(--gold);background:rgba(200,146,58,.12);color:var(--gold2)}
+.theme-btn .em{font-size:1.5rem;display:block;margin-bottom:3px;line-height:1}
+.theme-btn .nm{font-size:.78rem;font-weight:600;display:block}
+.theme-btn .cd{font-size:.68rem;color:var(--text3);margin-top:2px;font-family:monospace}
+.theme-btn.sel .cd{color:var(--gold)}
+
+/* ── DROP ZONE ── */
+.drop{border:2px dashed var(--border2);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:.15s;color:var(--text2);position:relative}
+.drop:hover,.drop.over{border-color:var(--gold);background:rgba(200,146,58,.04);color:var(--text)}
+.drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{font-size:2rem;margin-bottom:8px;display:block}
+.drop-hint{font-size:.82rem;margin-top:4px;color:var(--text3)}
+
+/* ── PREVIEW ── */
+.preview-box{display:none;margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid var(--border2);background:var(--bg3);text-align:center}
+.preview-box img{max-width:100%;max-height:300px;display:block;margin:0 auto}
+.preview-box .prev-label{font-size:.75rem;color:var(--text3);padding:6px;border-top:1px solid var(--border)}
+
+/* ── BUTTONS ── */
+.btn{padding:9px 22px;border-radius:8px;border:none;cursor:pointer;font-size:.85rem;font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:linear-gradient(135deg,#7a4e0e,var(--gold));color:#fff}
+.btn-primary:hover{background:linear-gradient(135deg,#9a6218,var(--gold3))}
+.btn-primary:disabled{opacity:.35;cursor:not-allowed}
+.btn-ghost{background:var(--bg4);border:1px solid var(--border2);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--gold);color:var(--text)}
+.btn-blue{background:rgba(42,90,138,.3);border:1px solid var(--blue);color:var(--blue2)}
+.btn-blue:hover{background:rgba(42,90,138,.5)}
+.btn-green{background:rgba(40,120,40,.25);border:1px solid var(--green);color:var(--green2)}
+.btn-danger{background:rgba(180,40,40,.15);border:1px solid #5a1818;color:#ff7070}
+.btn-danger:hover{background:rgba(180,40,40,.25)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn-full{width:100%;justify-content:center}
+
+/* ── PROGRESS ── */
+.prog-wrap{display:none;margin-top:14px}
+.prog-bar{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:3px;transition:width .25s}
+.prog-label{font-size:.78rem;color:var(--text2);margin-top:5px}
+
+/* ── BATCH LIST ── */
+.batch-scroll{max-height:260px;overflow-y:auto;margin-top:10px;border:1px solid var(--border);border-radius:8px}
+.brow{display:grid;grid-template-columns:1fr 90px 90px;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--border);font-size:.8rem}
+.brow:last-child{border-bottom:none}
+.brow .fname{color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .bcode{font-family:monospace;color:var(--gold);font-size:.78rem}
+.brow .bstat{text-align:right}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:.72rem;font-weight:700}
+.badge-ok{background:rgba(60,180,60,.12);color:#6de06d;border:1px solid #2a7a2a}
+.badge-dup{background:rgba(200,160,40,.12);color:var(--gold2);border:1px solid #7a6010}
+.badge-near{background:rgba(200,100,30,.12);color:#ffaa50;border:1px solid #7a4010}
+.badge-err{background:rgba(200,50,50,.12);color:#ff7070;border:1px solid #7a1a1a}
+.badge-wait{background:rgba(100,120,200,.1);color:#90aaee;border:1px solid #2a3a7a}
+
+/* ── RESULT PANEL ── */
+.result-panel{display:none;margin-top:14px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px}
+.result-inner{display:flex;gap:14px;align-items:flex-start}
+.result-thumb{width:88px;height:88px;object-fit:cover;border-radius:8px;border:1px solid var(--border2);flex-shrink:0;cursor:pointer}
+.result-info{flex:1}
+.result-code{font-family:monospace;font-size:1.2rem;color:var(--gold2);font-weight:700;margin-bottom:6px}
+.sim-bar-wrap{margin:8px 0;display:none}
+.sim-label{font-size:.75rem;color:var(--text2);margin-bottom:3px}
+.sim-bar{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.sim-fill{height:100%;border-radius:3px}
+
+/* ── CATALOG FOLDERS ── */
+.folder-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.folder-card{background:var(--bg2);border:1.5px solid var(--border2);border-radius:14px;padding:20px 18px;cursor:pointer;transition:.18s;position:relative;overflow:hidden}
+.folder-card:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.45)}
+.folder-card .fc-dl{position:absolute;top:12px;right:12px;background:rgba(200,146,58,.12);border:1px solid var(--border2);border-radius:6px;padding:4px 8px;font-size:.72rem;color:var(--text2);transition:.15s;cursor:pointer}
+.folder-card .fc-dl:hover{background:rgba(200,146,58,.25);color:var(--gold2);border-color:var(--gold)}
+.folder-card .fc-emoji{font-size:2.4rem;margin-bottom:10px;display:block}
+.folder-card .fc-name{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.folder-card .fc-path{font-family:monospace;font-size:.72rem;color:var(--text3);margin-bottom:10px}
+.folder-card .fc-count{display:inline-flex;align-items:center;gap:5px;background:rgba(200,146,58,.1);border:1px solid var(--border2);border-radius:20px;padding:3px 10px;font-size:.78rem;color:var(--text2)}
+.folder-card .fc-count strong{color:var(--gold2)}
+.folder-card .fc-preview{display:flex;gap:4px;margin-top:12px}
+.folder-card .fc-preview img{width:42px;height:42px;object-fit:cover;border-radius:5px;border:1px solid var(--border)}
+
+/* ── BREADCRUMB ── */
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:.85rem;color:var(--text2)}
+.bc-link{cursor:pointer;color:var(--text2);transition:.15s}
+.bc-link:hover{color:var(--gold2)}
+.bc-current{color:var(--text);font-weight:600}
+
+/* ── IMAGE GRID ── */
+.cat-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.cat-toolbar input{flex:1;min-width:150px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:7px 12px;color:var(--text);font-size:.83rem;outline:none}
+.cat-toolbar input:focus{border-color:var(--gold)}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.cat-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:.15s}
+.cat-card:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 5px 18px rgba(0,0,0,.4)}
+.cat-card img{width:100%;height:110px;object-fit:cover;display:block;background:var(--bg4)}
+.cat-card .ci{padding:7px 9px}
+.cat-card .ci-code{font-family:monospace;font-size:.78rem;font-weight:700;color:var(--gold);display:flex;justify-content:space-between;align-items:center}
+.cat-card .ci-sub{font-size:.7rem;color:var(--text2);margin-top:2px}
+.del-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:.85rem;padding:1px 3px;transition:.15s}
+.del-btn:hover{color:#ff5555}
+.pages{display:flex;gap:5px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.pages button{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:.8rem;transition:.15s}
+.pages button:hover{border-color:var(--gold)}
+.pages button.active{border-color:var(--gold);color:var(--gold2);background:rgba(200,146,58,.1)}
+.cat-empty{text-align:center;padding:40px 20px;color:var(--text2);font-size:.9rem}
+
+/* ── SETTINGS ── */
+.setting-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.setting-item:last-child{border-bottom:none}
+.setting-label{flex:1}
+.setting-label strong{display:block;font-size:.85rem;margin-bottom:2px}
+.setting-label span{font-size:.75rem;color:var(--text2)}
+.setting-control{display:flex;align-items:center;gap:8px}
+.setting-control input[type=range]{width:130px;accent-color:var(--gold)}
+.setting-control .val{font-family:monospace;font-size:.88rem;color:var(--gold2);min-width:28px;text-align:right}
+
+/* ── MODE SWITCH ── */
+.mode-switch{display:flex;gap:0;border:1px solid var(--border2);border-radius:8px;overflow:hidden;width:fit-content;margin-bottom:16px}
+.mode-switch button{padding:8px 18px;border:none;cursor:pointer;font-size:.82rem;font-weight:600;transition:.15s;background:var(--bg3);color:var(--text2)}
+.mode-switch button.active{background:rgba(200,146,58,.2);color:var(--gold2)}
+.mode-switch button:first-child{border-right:1px solid var(--border2)}
+
+/* ── DRIVE SETUP ── */
+.drive-setup-box{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:18px;margin-top:12px}
+.drive-setup-box h4{color:var(--gold2);font-size:.88rem;margin-bottom:12px}
+.drive-step{display:flex;gap:10px;margin-bottom:10px;font-size:.82rem;color:var(--text2);line-height:1.6}
+.drive-step .step-num{flex-shrink:0;width:22px;height:22px;background:rgba(200,146,58,.15);border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--gold2);margin-top:1px}
+code{background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-family:monospace;font-size:.8em;color:var(--gold2)}
+.inp-row{margin-top:12px}
+.inp-row label{display:block;font-size:.78rem;color:var(--text2);margin-bottom:5px}
+.inp-row input{width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:7px;padding:8px 12px;color:var(--text);font-size:.85rem;outline:none}
+.inp-row input:focus{border-color:var(--gold)}
+
+/* ── INFO BOX ── */
+.info-box{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;font-size:.78rem;color:var(--text2);line-height:1.7}
+.info-box strong{color:var(--gold2)}
+
+/* ── DRIVE STATUS ── */
+.drive-connected{background:rgba(40,120,40,.12);border:1px solid var(--green);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-top:12px}
+.drive-connected .dc-email{font-size:.88rem;font-weight:600;color:var(--green2)}
+.drive-connected .dc-sub{font-size:.75rem;color:var(--text2);margin-top:2px}
+
+/* ── LOGO ── */
+.logo-preview{width:60px;height:60px;border-radius:8px;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;overflow:hidden}
+.logo-preview img{width:100%;height:100%;object-fit:contain}
+
+/* ── LIGHTBOX ── */
+#lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+#lb.on{display:flex}
+#lb img{max-width:90vw;max-height:82vh;border-radius:8px;border:1px solid var(--gold)}
+#lb .lb-code{color:var(--gold2);font-family:monospace;font-size:.95rem}
+#lb .lb-x{position:absolute;top:18px;right:24px;font-size:1.6rem;cursor:pointer;color:var(--text2);background:none;border:none}
+#lb .lb-x:hover{color:var(--gold2)}
+
+/* ── STATUS BAR ── */
+#sbar{position:fixed;bottom:0;left:0;right:0;background:rgba(8,7,4,.96);border-top:1px solid var(--border2);padding:8px 24px;font-size:.78rem;color:var(--text2);display:none;z-index:99}
+#sbar.show{display:block}
+canvas{display:none}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div id="hdr-logo" style="width:32px;height:32px;border-radius:6px;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">🖼️</div>
+  <h1>Quản Lý Mẫu Tranh</h1>
+  <div class="header-right">
+    <div class="hstat" id="stat-storage">💾 Offline</div>
+    <div class="hstat" id="stat-count">⏳</div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-tab active" onclick="goPage('upload')">📷 Đóng mã</button>
+  <button class="nav-tab" onclick="goPage('catalog')">📁 Danh mục</button>
+  <button class="nav-tab" onclick="goPage('settings')">⚙️ Cài đặt</button>
+</nav>
+
+<!-- ════════════════════════════════
+     PAGE: UPLOAD
+════════════════════════════════ -->
+<div class="page active" id="page-upload">
+  <div class="card">
+    <div class="card-title">Chọn chủ đề</div>
+    <div class="theme-grid" id="theme-grid"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Chọn ảnh</div>
+    <div class="btn-row" style="margin:0 0 14px">
+      <button class="btn btn-ghost" id="mode-single-btn" onclick="setMode('single')">🖼️ Đơn lẻ</button>
+      <button class="btn btn-ghost" id="mode-batch-btn" onclick="setMode('batch')">📦 Hàng loạt</button>
+    </div>
+
+    <div id="zone-single">
+      <div class="drop" id="dz-s" ondragover="dzo(event,'dz-s')" ondragleave="dzl('dz-s')" ondrop="dzDropS(event)">
+        <input type="file" accept="image/*" onchange="pickSingle(this.files[0])" onclick="this.value=''">
+        <span class="drop-icon">🖼️</span>
+        <div>Kéo thả hoặc <strong>click</strong> để chọn ảnh</div>
+        <div class="drop-hint">JPG · PNG · WEBP</div>
+      </div>
+      <div class="preview-box" id="prev-box">
+        <img id="prev-img" src="">
+        <div class="prev-label" id="prev-label"></div>
+      </div>
+    </div>
+
+    <div id="zone-batch" style="display:none">
+      <div class="drop" id="dz-b" ondragover="dzo(event,'dz-b')" ondragleave="dzl('dz-b')" ondrop="dzDropB(event)">
+        <input type="file" accept="image/*" multiple onchange="pickBatch(this.files)" onclick="this.value=''">
+        <span class="drop-icon">📂</span>
+        <div>Kéo thả hoặc <strong>click</strong> để chọn nhiều ảnh</div>
+        <div class="drop-hint">Tối đa 200 ảnh một lần</div>
+      </div>
+      <div id="batch-info" style="font-size:.8rem;color:var(--text2);margin-top:8px"></div>
+      <div class="batch-scroll" id="batch-scroll" style="display:none">
+        <div class="brow" style="background:var(--bg3);font-size:.72rem;color:var(--text3);font-weight:700">
+          <span>TÊN FILE</span><span>MÃ</span><span style="text-align:right">TRẠNG THÁI</span>
+        </div>
+        <div id="batch-rows"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Xử lý</div>
+    <button class="btn btn-primary btn-full" id="btn-go" onclick="doProcess()" disabled>🔖 Đóng mã & lưu</button>
+    <div class="prog-wrap" id="prog-wrap">
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      <div class="prog-label" id="prog-label"></div>
+    </div>
+    <div class="result-panel" id="result-single">
+      <div class="result-inner">
+        <img class="result-thumb" id="res-thumb" src="">
+        <div class="result-info">
+          <div class="result-code" id="res-code"></div>
+          <div id="res-badge"></div>
+          <div class="sim-bar-wrap" id="sim-wrap">
+            <div class="sim-label" id="sim-label"></div>
+            <div class="sim-bar"><div class="sim-fill" id="sim-fill"></div></div>
+          </div>
+          <div class="btn-row" style="margin-top:10px">
+            <button class="btn btn-primary" onclick="dlSingle()">⬇️ Tải xuống</button>
+            <button class="btn btn-ghost" onclick="copyCode()">📋 Copy mã</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="batch-actions" style="display:none">
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn btn-primary" onclick="dlZip()">📦 Tải ZIP (phân thư mục)</button>
+        <button class="btn btn-ghost" onclick="clearBatch()">🗑️ Xoá batch</button>
+      </div>
+      <div id="batch-summary" style="font-size:.8rem;color:var(--text2);margin-top:8px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     PAGE: CATALOG
+════════════════════════════════ -->
+<div class="page" id="page-catalog">
+  <div class="card">
+    <div class="breadcrumb" id="breadcrumb" style="display:none">
+      <span class="bc-link" onclick="exitFolder()">📁 Danh mục</span>
+      <span style="color:var(--text3)">›</span>
+      <span class="bc-current" id="bc-current"></span>
+      <span style="flex:1"></span>
+      <button class="btn btn-ghost" style="padding:5px 12px;font-size:.78rem" onclick="dlFolder()">⬇️ Tải thư mục</button>
+    </div>
+    <div id="folder-view">
+      <div class="folder-grid" id="folder-grid"></div>
+      <div id="folder-empty" class="cat-empty" style="display:none">Chưa có ảnh nào trong danh mục</div>
+    </div>
+    <div id="img-view" style="display:none">
+      <div class="cat-toolbar">
+        <input type="text" id="cat-q" placeholder="🔍 Tìm theo mã, tên file..." oninput="filterImg()">
+        <button class="btn btn-ghost" onclick="loadCat()">🔄 Làm mới</button>
+        <button class="btn btn-ghost" onclick="exportCSV()">📊 CSV</button>
+        <span id="cat-count" style="font-size:.78rem;color:var(--text2)"></span>
+      </div>
+      <div class="cat-grid" id="cat-grid"></div>
+      <div class="pages" id="cat-pages"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     PAGE: SETTINGS
+════════════════════════════════ -->
+<div class="page" id="page-settings">
+
+  <!-- Storage Mode -->
+  <div class="card">
+    <div class="card-title">Chế độ lưu trữ</div>
+    <div class="mode-switch">
+      <button id="mode-offline-btn" onclick="setStorageMode('offline')">💾 Offline (máy này)</button>
+      <button id="mode-drive-btn" onclick="setStorageMode('drive')">☁️ Google Drive</button>
+    </div>
+
+    <!-- OFFLINE INFO -->
+    <div id="offline-info">
+      <div class="info-box">
+        Dữ liệu lưu trong <strong>IndexedDB</strong> của trình duyệt này. Nhanh, không cần internet.<br>
+        Phù hợp khi chỉ 1 máy sử dụng. Xuất backup JSON định kỳ để tránh mất dữ liệu.
+      </div>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn btn-ghost" onclick="exportBackup()">💾 Xuất backup JSON</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('imp-file').click()">📥 Nhập JSON</button>
+        <input type="file" id="imp-file" accept=".json" style="display:none" onchange="importBackup(this.files[0])">
+      </div>
+    </div>
+
+    <!-- GOOGLE DRIVE SETUP -->
+    <div id="drive-info" style="display:none">
+      <div class="info-box">
+        Ảnh lưu trên <strong>Google Drive</strong> của bạn, phân thư mục theo chủ đề.<br>
+        Toàn bộ nhóm cùng truy cập bằng cách <strong>chia sẻ thư mục</strong> "AV Decor Tranh" trong Drive.
+      </div>
+
+      <!-- Nếu đã kết nối -->
+      <div id="drive-connected-box" style="display:none">
+        <div class="drive-connected">
+          <span style="font-size:1.8rem">☁️</span>
+          <div>
+            <div class="dc-email" id="drive-email"></div>
+            <div class="dc-sub" id="drive-folder-info"></div>
+          </div>
+          <button class="btn btn-ghost" style="margin-left:auto;padding:6px 14px;font-size:.78rem" onclick="disconnectDrive()">Ngắt kết nối</button>
+        </div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-ghost" onclick="syncFromDrive()">🔄 Đồng bộ từ Drive</button>
+          <button class="btn btn-ghost" onclick="exportCSVAll()">📊 Xuất CSV</button>
+        </div>
+      </div>
+
+      <!-- Chưa kết nối — hướng dẫn setup -->
+      <div id="drive-setup-box" class="drive-setup-box">
+        <h4>⚙️ Thiết lập Google Drive (làm một lần)</h4>
+        <div class="drive-step">
+          <div class="step-num">1</div>
+          <div>Vào <a href="https://console.cloud.google.com" target="_blank" style="color:var(--gold2)">console.cloud.google.com</a> → Tạo project mới (ví dụ: "AV Decor Tranh")</div>
+        </div>
+        <div class="drive-step">
+          <div class="step-num">2</div>
+          <div>Vào <strong>APIs & Services → Library</strong> → Tìm <code>Google Drive API</code> → <strong>Enable</strong></div>
+        </div>
+        <div class="drive-step">
+          <div class="step-num">3</div>
+          <div>Vào <strong>APIs & Services → OAuth consent screen</strong> → Chọn <strong>External</strong> → Điền tên app → Save</div>
+        </div>
+        <div class="drive-step">
+          <div class="step-num">4</div>
+          <div>Vào <strong>Credentials → Create Credentials → OAuth client ID</strong> → Chọn <strong>Web application</strong></div>
+        </div>
+        <div class="drive-step">
+          <div class="step-num">5</div>
+          <div>Trong <strong>Authorized JavaScript origins</strong> thêm URL của bạn:<br>
+            <code id="current-origin"></code>
+          </div>
+        </div>
+        <div class="drive-step">
+          <div class="step-num">6</div>
+          <div>Copy <strong>Client ID</strong> dán vào bên dưới</div>
+        </div>
+        <div class="inp-row">
+          <label>Google OAuth Client ID</label>
+          <input type="text" id="drive-client-id" placeholder="123456789-abc...apps.googleusercontent.com">
+        </div>
+        <div class="btn-row" style="margin-top:14px">
+          <button class="btn btn-blue" onclick="connectDrive()">☁️ Kết nối Google Drive</button>
+        </div>
+        <div id="drive-err" style="font-size:.78rem;color:#ff7070;margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logo -->
+  <div class="card">
+    <div class="card-title">Logo trên tem đóng mã</div>
+    <div style="display:flex;align-items:center;gap:16px;margin-top:4px">
+      <div class="logo-preview" id="logo-preview-box">
+        <span id="logo-ph">🏷️</span>
+        <img id="logo-img" src="" style="display:none;width:100%;height:100%;object-fit:contain">
+      </div>
+      <div>
+        <p style="font-size:.82rem;color:var(--text2);margin-bottom:10px">Logo hiển thị cạnh mã SKU trên ảnh.<br>Khuyến nghị: PNG nền trong suốt.</p>
+        <div class="btn-row" style="margin-top:0">
+          <button class="btn btn-ghost" onclick="document.getElementById('logo-file').click()">📁 Chọn logo</button>
+          <button class="btn btn-ghost" id="btn-rm-logo" style="display:none" onclick="removeLogo()">✕ Xoá logo</button>
+        </div>
+        <input type="file" id="logo-file" accept="image/*" style="display:none" onchange="uploadLogo(this.files[0])">
+      </div>
+    </div>
+  </div>
+
+  <!-- Duplicate detection -->
+  <div class="card">
+    <div class="card-title">Phát hiện trùng lặp — dHash 64-bit</div>
+    <div class="info-box" style="margin-bottom:14px">
+      <strong>dHash</strong> so sánh gradient ảnh 9×8px → chuỗi 64-bit. <strong>Hamming distance</strong> đếm số bit khác nhau.<br>
+      <strong>0 bit</strong> = giống hệt · <strong>5–10</strong> = resize/nén nhẹ · <strong>15+</strong> = ảnh khác nhau
+    </div>
+    <div class="setting-item">
+      <div class="setting-label"><strong>Ngưỡng TỪ CHỐI</strong><span>≤ ngưỡng → coi là trùng, trả mã cũ</span></div>
+      <div class="setting-control">
+        <input type="range" min="0" max="20" id="s-thresh" oninput="sThresh(this.value)">
+        <span class="val" id="v-thresh">10</span>
+      </div>
+    </div>
+    <div class="setting-item">
+      <div class="setting-label"><strong>Ngưỡng CẢNH BÁO</strong><span>Hiển thị cảnh báo nhưng vẫn tạo mã mới</span></div>
+      <div class="setting-control">
+        <input type="range" min="0" max="30" id="s-warn" oninput="sWarn(this.value)">
+        <span class="val" id="v-warn">18</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Xoá dữ liệu</div>
+    <button class="btn btn-danger" onclick="clearAll()">🗑️ Xoá toàn bộ catalog (offline)</button>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lb">
+  <button class="lb-x" onclick="closeLb()">✕</button>
+  <img id="lb-img" src="">
+  <div class="lb-code" id="lb-code"></div>
+  <button class="btn btn-primary" onclick="dlLb()">⬇️ Tải xuống</button>
+</div>
+
+<div id="sbar"></div>
+<canvas id="cv2"></canvas>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// CONSTANTS & STATE
+// ══════════════════════════════════════════════════════════════════
+const THEMES=[
+  {name:'Hoa',        code:'H',  emoji:'🌸', folder:'Hoa'},
+  {name:'Phong cảnh', code:'PC', emoji:'🏔️', folder:'Phong_canh'},
+  {name:'Tĩnh vật',   code:'TT', emoji:'🍎', folder:'Tinh_vat'},
+  {name:'Động vật',   code:'DV', emoji:'🦁', folder:'Dong_vat'},
+  {name:'Trừu tượng', code:'PT', emoji:'🎨', folder:'Truu_tuong'},
+];
+const DB_NAME='avdecor_v3', DB_VER=1, STORE='cat', PAGE=50;
+const DRIVE_ROOT_NAME='AV Decor Tranh';
+const DRIVE_CATALOG_NAME='catalog.json';
+
+let DB=null;
+let selTheme=null, mode='single';
+let sFile=null, sDataURL=null, sBlob=null, sCode=null;
+let bFiles=[], bBlobs={}, bResults=[];
+let catData=[], catFiltered=[], catPage=1, activeFolder=null;
+let THRESH=10, WARN=18;
+let logoDataURL=null;
+
+// Google Drive state
+let storageMode='offline'; // 'offline' | 'drive'
+let driveToken=null;
+let driveTokenExpiry=0;
+let driveRootId=null;
+let driveFolderIds={}; // {H: id, PC: id, ...}
+let driveCatalogFileId=null;
+let driveUserEmail='';
+let driveClientId='';
+let tokenClient=null;
+
+// ══════════════════════════════════════════════════════════════════
+// INDEXEDDB
+// ══════════════════════════════════════════════════════════════════
+function openDB(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open(DB_NAME,DB_VER);
+    r.onupgradeneeded=e=>{
+      const db=e.target.result;
+      if(!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE,{keyPath:'code'});
+    };
+    r.onsuccess=e=>res(e.target.result);
+    r.onerror=e=>rej(e.target.error);
+  });
+}
+const dbtx=(m,fn)=>new Promise((res,rej)=>{
+  const t=DB.transaction(STORE,m),s=t.objectStore(STORE),r=fn(s);
+  r.onsuccess=e=>res(e.target.result);r.onerror=e=>rej(e.target.error);
+});
+const dbAll=()=>dbtx('readonly',s=>s.getAll());
+const dbPut=v=>dbtx('readwrite',s=>s.put(v));
+const dbDel=k=>dbtx('readwrite',s=>s.delete(k));
+const dbCnt=()=>dbtx('readonly',s=>s.count());
+
+// ══════════════════════════════════════════════════════════════════
+// GOOGLE DRIVE API
+// ══════════════════════════════════════════════════════════════════
+const DRIVE_SCOPE='https://www.googleapis.com/auth/drive';
+const DRIVE_API='https://www.googleapis.com/drive/v3';
+const DRIVE_UPLOAD='https://www.googleapis.com/upload/drive/v3';
+
+function driveHeaders(){
+  return {'Authorization':'Bearer '+driveToken,'Content-Type':'application/json'};
+}
+
+async function driveGet(path,params=''){
+  const res=await fetch(`${DRIVE_API}/${path}?${params}`,{headers:{'Authorization':'Bearer '+driveToken}});
+  if(!res.ok) throw new Error('Drive API error: '+res.status);
+  return res.json();
+}
+
+async function drivePost(path,body){
+  const res=await fetch(`${DRIVE_API}/${path}`,{method:'POST',headers:driveHeaders(),body:JSON.stringify(body)});
+  if(!res.ok) throw new Error('Drive API error: '+res.status);
+  return res.json();
+}
+
+async function driveDelete(fileId){
+  await fetch(`${DRIVE_API}/files/${fileId}`,{method:'DELETE',headers:{'Authorization':'Bearer '+driveToken}});
+}
+
+// Find a file/folder by name in a parent
+async function driveFindFile(name, parentId, mimeType=''){
+  let q=`name='${name.replace(/'/g,"\\'")}' and trashed=false`;
+  if(parentId) q+=` and '${parentId}' in parents`;
+  if(mimeType) q+=` and mimeType='${mimeType}'`;
+  const data=await driveGet('files',`q=${encodeURIComponent(q)}&fields=files(id,name,thumbnailLink)&spaces=drive`);
+  return data.files && data.files.length>0 ? data.files[0] : null;
+}
+
+// Create folder in Drive
+async function driveCreateFolder(name, parentId){
+  const body={name,mimeType:'application/vnd.google-apps.folder'};
+  if(parentId) body.parents=[parentId];
+  const data=await drivePost('files',body);
+  return data.id;
+}
+
+// Find or create folder
+async function driveEnsureFolder(name, parentId){
+  const existing=await driveFindFile(name,parentId,'application/vnd.google-apps.folder');
+  if(existing) return existing.id;
+  return await driveCreateFolder(name,parentId);
+}
+
+// Upload image blob to Drive (multipart)
+async function driveUploadImage(blob, name, parentId){
+  const metadata=JSON.stringify({name,parents:[parentId]});
+  const form=new FormData();
+  form.append('metadata',new Blob([metadata],{type:'application/json'}));
+  form.append('file',blob,'file.jpg');
+  const res=await fetch(`${DRIVE_UPLOAD}/files?uploadType=multipart&fields=id,thumbnailLink`,{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+driveToken},
+    body:form
+  });
+  if(!res.ok) throw new Error('Drive upload error: '+res.status);
+  return res.json();
+}
+
+// Read JSON file from Drive
+async function driveReadJSON(fileId){
+  const res=await fetch(`${DRIVE_API}/files/${fileId}?alt=media`,{
+    headers:{'Authorization':'Bearer '+driveToken}
+  });
+  if(!res.ok) throw new Error('Drive read error: '+res.status);
+  return res.json();
+}
+
+// Write/update JSON file in Drive
+async function driveWriteJSON(fileId, data){
+  const body=new Blob([JSON.stringify(data)],{type:'application/json'});
+  const url=fileId
+    ? `${DRIVE_UPLOAD}/files/${fileId}?uploadType=media`
+    : `${DRIVE_UPLOAD}/files?uploadType=media`;
+  const res=await fetch(url,{
+    method: fileId?'PATCH':'POST',
+    headers:{'Authorization':'Bearer '+driveToken,'Content-Type':'application/json'},
+    body
+  });
+  if(!res.ok) throw new Error('Drive write error: '+res.status);
+  return res.json();
+}
+
+// Create catalog.json if not exists, otherwise just update
+async function driveUpdateCatalog(entries){
+  if(!driveCatalogFileId){
+    // Create new catalog.json in root
+    const metadata=JSON.stringify({name:DRIVE_CATALOG_NAME,parents:[driveRootId]});
+    const body=JSON.stringify({v:1,entries});
+    const form=new FormData();
+    form.append('metadata',new Blob([metadata],{type:'application/json'}));
+    form.append('file',new Blob([body],{type:'application/json'}),'catalog.json');
+    const res=await fetch(`${DRIVE_UPLOAD}/files?uploadType=multipart&fields=id`,{
+      method:'POST',headers:{'Authorization':'Bearer '+driveToken},body:form
+    });
+    const data=await res.json();
+    driveCatalogFileId=data.id;
+    localStorage.setItem('drive_catalog_id',driveCatalogFileId);
+  } else {
+    await driveWriteJSON(driveCatalogFileId,{v:1,entries});
+  }
+}
+
+// Get full image URL from Drive (with auth)
+async function getDriveImageBlob(fileId){
+  const res=await fetch(`${DRIVE_API}/files/${fileId}?alt=media`,{
+    headers:{'Authorization':'Bearer '+driveToken}
+  });
+  if(!res.ok) throw new Error('Cannot load image from Drive');
+  return URL.createObjectURL(await res.blob());
+}
+
+// ══════════════════════════════════════════════════════════════════
+// OAUTH2 — Google Identity Services
+// ══════════════════════════════════════════════════════════════════
+function initTokenClient(clientId){
+  return new Promise(res=>{
+    const waitGIS=()=>{
+      if(typeof google !== 'undefined' && google.accounts){
+        tokenClient=google.accounts.oauth2.initTokenClient({
+          client_id:clientId,
+          scope:DRIVE_SCOPE,
+          callback:()=>{}  // set per-request
+        });
+        res();
+      } else setTimeout(waitGIS,200);
+    };
+    waitGIS();
+  });
+}
+
+function requestToken(){
+  return new Promise((res,rej)=>{
+    tokenClient.callback=(resp)=>{
+      if(resp.error) return rej(new Error(resp.error));
+      driveToken=resp.access_token;
+      driveTokenExpiry=Date.now()+(resp.expires_in||3600)*1000-60000;
+      res(resp);
+    };
+    // Try silent first, then prompt
+    tokenClient.requestAccessToken({prompt:''});
+    // If silent fails, GIS will trigger prompt automatically
+  });
+}
+
+async function ensureToken(){
+  if(driveToken && Date.now()<driveTokenExpiry) return;
+  await requestToken();
+}
+
+// Get user email from token
+async function getDriveUserInfo(){
+  const res=await fetch('https://www.googleapis.com/oauth2/v1/userinfo',{
+    headers:{'Authorization':'Bearer '+driveToken}
+  });
+  return res.json();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// DRIVE CONNECT / SETUP
+// ══════════════════════════════════════════════════════════════════
+async function connectDrive(){
+  const clientId=document.getElementById('drive-client-id').value.trim();
+  const errEl=document.getElementById('drive-err');
+  errEl.textContent='';
+  if(!clientId){errEl.textContent='⚠️ Nhập Client ID'; return;}
+  if(!clientId.includes('.apps.googleusercontent.com')){errEl.textContent='⚠️ Client ID không đúng định dạng';return;}
+
+  try{
+    status('⏳ Đang kết nối Google Drive...');
+    driveClientId=clientId;
+    localStorage.setItem('drive_client_id',clientId);
+    await initTokenClient(clientId);
+    await requestToken();
+    const info=await getDriveUserInfo();
+    driveUserEmail=info.email||'';
+    localStorage.setItem('drive_email',driveUserEmail);
+    await setupDriveFolders();
+    localStorage.setItem('drive_token_time',Date.now().toString());
+    showDriveConnected();
+    status('✅ Đã kết nối Google Drive: '+driveUserEmail);
+  }catch(e){
+    errEl.textContent='❌ Lỗi: '+e.message;
+    console.error(e);
+  }
+}
+
+async function setupDriveFolders(){
+  status('⏳ Đang thiết lập thư mục Drive...',8000);
+  // Root folder
+  driveRootId=await driveEnsureFolder(DRIVE_ROOT_NAME, null);
+  localStorage.setItem('drive_root_id',driveRootId);
+  // Theme subfolders
+  for(const th of THEMES){
+    driveFolderIds[th.code]=await driveEnsureFolder(th.folder, driveRootId);
+  }
+  localStorage.setItem('drive_folder_ids',JSON.stringify(driveFolderIds));
+  // Catalog
+  const existing=await driveFindFile(DRIVE_CATALOG_NAME, driveRootId);
+  if(existing){
+    driveCatalogFileId=existing.id;
+    localStorage.setItem('drive_catalog_id',driveCatalogFileId);
+  }
+  document.getElementById('drive-folder-info').textContent=
+    `📁 ${DRIVE_ROOT_NAME}/ · ${Object.keys(driveFolderIds).length} thư mục con`;
+}
+
+function showDriveConnected(){
+  document.getElementById('drive-setup-box').style.display='none';
+  document.getElementById('drive-connected-box').style.display='block';
+  document.getElementById('drive-email').textContent='✅ '+driveUserEmail;
+  document.getElementById('drive-folder-info').textContent=
+    `📁 ${DRIVE_ROOT_NAME}/ đã sẵn sàng`;
+  storageMode='drive';
+  localStorage.setItem('storage_mode','drive');
+  updateStorageUI();
+}
+
+function disconnectDrive(){
+  if(!confirm('Ngắt kết nối Google Drive? Dữ liệu trên Drive không bị xoá.')) return;
+  driveToken=null; driveRootId=null; driveFolderIds={}; driveCatalogFileId=null;
+  localStorage.removeItem('drive_client_id');localStorage.removeItem('drive_root_id');
+  localStorage.removeItem('drive_folder_ids');localStorage.removeItem('drive_catalog_id');
+  localStorage.removeItem('drive_email');localStorage.removeItem('storage_mode');
+  storageMode='offline';
+  document.getElementById('drive-setup-box').style.display='block';
+  document.getElementById('drive-connected-box').style.display='none';
+  document.getElementById('drive-client-id').value='';
+  updateStorageUI(); status('Đã ngắt kết nối Drive');
+}
+
+async function syncFromDrive(){
+  if(!driveToken){status('❌ Chưa kết nối Drive');return;}
+  try{
+    await ensureToken();
+    if(!driveCatalogFileId){status('⚠️ Chưa có catalog.json trên Drive');return;}
+    status('⏳ Đang tải catalog từ Drive...',6000);
+    const data=await driveReadJSON(driveCatalogFileId);
+    catData=(data.entries||[]).sort((a,b)=>(b.created_at||0)-(a.created_at||0));
+    renderFolders();
+    status(`✅ Đã tải ${catData.length} mẫu từ Drive`);
+  }catch(e){status('❌ Lỗi đồng bộ: '+e.message);}
+}
+
+// ══════════════════════════════════════════════════════════════════
+// STORAGE INTERFACE (unified offline + drive)
+// ══════════════════════════════════════════════════════════════════
+async function storeEntry(entry, blob){
+  if(storageMode==='drive'){
+    await ensureToken();
+    const folderId=driveFolderIds[entry.theme_code];
+    if(!folderId) throw new Error('Chưa tìm thấy thư mục Drive cho chủ đề này');
+    // Upload stamped image
+    const uploaded=await driveUploadImage(blob, entry.code+'.jpg', folderId);
+    entry.drive_id=uploaded.id;
+    entry.thumb_url=uploaded.thumbnailLink||'';
+    // Remove local imgData (not stored in Drive catalog)
+    delete entry.imgData;
+    // Load existing catalog
+    let entries=[];
+    if(driveCatalogFileId){
+      try{const existing=await driveReadJSON(driveCatalogFileId);entries=existing.entries||[];}catch(e){}
+    }
+    entries.push(entry);
+    await driveUpdateCatalog(entries);
+    catData=entries.sort((a,b)=>(b.created_at||0)-(a.created_at||0));
+    return entry;
+  } else {
+    // Offline: store image as base64 in IndexedDB
+    const imgData=await blobToB64(blob);
+    entry.imgData=imgData;
+    await dbPut(entry);
+    return entry;
+  }
+}
+
+async function loadAllEntries(){
+  if(storageMode==='drive'){
+    if(!driveToken){
+      try{await ensureToken();}catch(e){return catData;}
+    }
+    if(!driveCatalogFileId) return [];
+    try{
+      const data=await driveReadJSON(driveCatalogFileId);
+      return data.entries||[];
+    }catch(e){return catData||[];}
+  } else {
+    return await dbAll();
+  }
+}
+
+async function deleteEntry(code){
+  if(storageMode==='drive'){
+    await ensureToken();
+    // Find file in Drive
+    const th=catData.find(r=>r.code===code);
+    if(th&&th.drive_id){
+      try{await driveDelete(th.drive_id);}catch(e){}
+    }
+    const entries=catData.filter(r=>r.code!==code);
+    await driveUpdateCatalog(entries);
+    catData=entries;
+  } else {
+    await dbDel(code);
+    catData=catData.filter(r=>r.code!==code);
+  }
+}
+
+async function getEntryCount(){
+  if(storageMode==='drive') return catData.length;
+  return await dbCnt();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// dHASH 64-bit + Hamming
+// ══════════════════════════════════════════════════════════════════
+function dHash(dataURL){
+  return new Promise(res=>{
+    const img=new Image();
+    img.onload=()=>{
+      const cv=document.createElement('canvas');cv.width=9;cv.height=8;
+      const ctx=cv.getContext('2d');ctx.drawImage(img,0,0,9,8);
+      const px=ctx.getImageData(0,0,9,8).data;
+      let bits='';
+      for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+        const a=(r*9+c)*4,b=(r*9+c+1)*4;
+        const g1=px[a]*.299+px[a+1]*.587+px[a+2]*.114;
+        const g2=px[b]*.299+px[b+1]*.587+px[b+2]*.114;
+        bits+=g1>g2?'1':'0';
+      }
+      let hex='';
+      for(let i=0;i<64;i+=4) hex+=parseInt(bits.slice(i,i+4),2).toString(16);
+      res(hex);
+    };
+    img.src=dataURL;
+  });
+}
+function hamming(h1,h2){
+  if(!h1||!h2||h1.length!==h2.length) return 64;
+  let d=0;
+  for(let i=0;i<h1.length;i++){let x=parseInt(h1[i],16)^parseInt(h2[i],16);while(x){d+=x&1;x>>=1;}}
+  return d;
+}
+function sim(d){return Math.round((1-d/64)*100);}
+async function chkDup(hash){
+  const all=await loadAllEntries();
+  let best=64,bestE=null;
+  for(const e of all){if(!e.hash)continue;const d=hamming(hash,e.hash);if(d<best){best=d;bestE=e;}}
+  return {dist:best,entry:bestE};
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CODE GENERATOR
+// ══════════════════════════════════════════════════════════════════
+async function nextCode(prefix){
+  const all=await loadAllEntries();
+  const same=all.filter(r=>r.code&&r.code.startsWith(prefix));
+  if(!same.length) return prefix+'00001';
+  const max=Math.max(...same.map(r=>parseInt(r.code.slice(prefix.length),10)||0));
+  return prefix+String(max+1).padStart(5,'0');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// STAMP
+// ══════════════════════════════════════════════════════════════════
+function rr(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
+async function stampImg(dataURL,code){
+  const img=await loadImg(dataURL);
+  const cv=document.getElementById('cv2');
+  cv.width=img.width;cv.height=img.height;
+  const ctx=cv.getContext('2d');ctx.drawImage(img,0,0);
+  const sc=Math.min(img.width,img.height)/800;
+  const fs=Math.round(Math.max(16,26*sc)),pad=fs*.55,mg=fs*.7;
+  ctx.font=`900 ${fs}px 'Courier New',monospace`;
+  const tw=ctx.measureText(code).width;
+  const hasLogo=!!logoDataURL;
+  const lsz=hasLogo?Math.round(fs*1.35):0,lgap=hasLogo?Math.round(fs*.45):0;
+  const bw=pad*2+tw+(hasLogo?lsz+lgap:0),bh=Math.max(fs+pad*1.3,hasLogo?lsz+pad*.8:0);
+  const x=mg,y=img.height-bh-mg;
+  ctx.shadowColor='rgba(0,0,0,.9)';ctx.shadowBlur=16;
+  ctx.fillStyle='rgba(12,9,3,.88)';rr(ctx,x,y,bw,bh,bh/2.2);ctx.fill();
+  ctx.shadowBlur=0;ctx.strokeStyle='#c8923a';ctx.lineWidth=Math.max(1.5,2.2*sc);
+  rr(ctx,x,y,bw,bh,bh/2.2);ctx.stroke();
+  if(hasLogo){try{const li=await loadImg(logoDataURL);ctx.drawImage(li,x+pad,y+(bh-lsz)/2,lsz,lsz);}catch(e){}}
+  const tx2=x+pad+(hasLogo?lsz+lgap:0),ty=y+bh/2+fs*.36;
+  ctx.fillStyle='#ffd275';ctx.font=`900 ${fs}px 'Courier New',monospace`;
+  ctx.shadowColor='rgba(200,146,58,.6)';ctx.shadowBlur=7;
+  ctx.fillText(code,tx2,ty);
+  return new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error('Canvas error')),'image/jpeg',.93));
+}
+
+// ══════════════════════════════════════════════════════════════════
+// FILE UTILS
+// ══════════════════════════════════════════════════════════════════
+function readFile(f){return new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(f);});}
+function blobToB64(blob){return new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(blob);});}
+
+// ══════════════════════════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════════════════════════
+function status(msg,dur=4000){
+  const b=document.getElementById('sbar');b.textContent=msg;b.classList.add('show');
+  clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('show'),dur);
+}
+function dzo(e,id){e.preventDefault();document.getElementById(id).classList.add('over');}
+function dzl(id){document.getElementById(id).classList.remove('over');}
+function dzDropS(e){e.preventDefault();dzl('dz-s');const f=e.dataTransfer.files[0];if(f)pickSingle(f);}
+function dzDropB(e){e.preventDefault();dzl('dz-b');pickBatch(e.dataTransfer.files);}
+function goPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',['upload','catalog','settings'][i]===name));
+  document.getElementById('page-'+name).classList.add('active');
+  if(name==='catalog') loadCat();
+}
+function setMode(m){
+  mode=m;
+  document.getElementById('zone-single').style.display=m==='single'?'block':'none';
+  document.getElementById('zone-batch').style.display=m==='batch'?'block':'none';
+  document.getElementById('result-single').style.display='none';
+  document.getElementById('batch-actions').style.display='none';
+  document.getElementById('mode-single-btn').className='btn '+(m==='single'?'btn-primary':'btn-ghost');
+  document.getElementById('mode-batch-btn').className='btn '+(m==='batch'?'btn-primary':'btn-ghost');
+  checkReady();
+}
+function checkReady(){
+  const ok=selTheme&&(mode==='single'?!!sDataURL:bFiles.length>0);
+  document.getElementById('btn-go').disabled=!ok;
+  document.getElementById('btn-go').textContent=mode==='single'?'🔖 Đóng mã & lưu':`⚡ Đóng mã ${bFiles.length} ảnh`;
+}
+async function refreshCount(){
+  try{
+    const n=await getEntryCount();
+    document.getElementById('stat-count').textContent=`📦 ${n} mẫu`;
+  }catch(e){}
+}
+function updateStorageUI(){
+  const isD=storageMode==='drive';
+  document.getElementById('mode-offline-btn').classList.toggle('active',!isD);
+  document.getElementById('mode-drive-btn').classList.toggle('active',isD);
+  document.getElementById('offline-info').style.display=isD?'none':'block';
+  document.getElementById('drive-info').style.display=isD?'block':'none';
+  const stat=document.getElementById('stat-storage');
+  if(isD){stat.textContent='☁️ Google Drive';stat.className='hstat blue';}
+  else{stat.textContent='💾 Offline';stat.className='hstat';}
+}
+function setStorageMode(m){
+  storageMode=m;
+  localStorage.setItem('storage_mode',m);
+  updateStorageUI();
+  if(m==='drive' && driveClientId && !driveToken){
+    // Try silent reconnect
+    silentReconnect();
+  }
+}
+async function silentReconnect(){
+  if(!driveClientId) return;
+  try{
+    await initTokenClient(driveClientId);
+    await requestToken();
+    const info=await getDriveUserInfo();
+    driveUserEmail=info.email||localStorage.getItem('drive_email')||'';
+    showDriveConnected();
+  }catch(e){
+    // Silent fail — user needs to reconnect manually
+    document.getElementById('drive-setup-box').style.display='block';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SINGLE
+// ══════════════════════════════════════════════════════════════════
+async function pickSingle(f){
+  if(!f)return; sFile=f; sDataURL=await readFile(f);
+  document.getElementById('prev-img').src=sDataURL;
+  document.getElementById('prev-label').textContent=f.name+' ('+Math.round(f.size/1024)+' KB)';
+  document.getElementById('prev-box').style.display='block';
+  document.getElementById('result-single').style.display='none';
+  checkReady();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// BATCH
+// ══════════════════════════════════════════════════════════════════
+function pickBatch(files){
+  bFiles=Array.from(files).slice(0,200);bBlobs={};bResults=[];
+  document.getElementById('batch-info').textContent=`Đã chọn ${bFiles.length} ảnh`;
+  const rows=document.getElementById('batch-rows');rows.innerHTML='';
+  bFiles.forEach((f,i)=>{
+    const d=document.createElement('div');d.className='brow';d.id='brow-'+i;
+    d.innerHTML=`<span class="fname" title="${f.name}">${f.name}</span><span class="bcode" id="bcode-${i}">—</span><span class="bstat" id="bstat-${i}"><span class="badge badge-wait">Chờ</span></span>`;
+    rows.appendChild(d);
+  });
+  document.getElementById('batch-scroll').style.display=bFiles.length?'block':'none';
+  document.getElementById('batch-actions').style.display='none';
+  document.getElementById('batch-summary').textContent='';
+  checkReady();
+}
+function setBRow(i,code,badgeHTML){
+  const bc=document.getElementById('bcode-'+i);if(bc)bc.textContent=code;
+  const bs=document.getElementById('bstat-'+i);if(bs)bs.innerHTML=badgeHTML;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PROCESS
+// ══════════════════════════════════════════════════════════════════
+async function doProcess(){if(!selTheme)return;mode==='single'?await doSingle():await doBatch();}
+
+async function doSingle(){
+  const btn=document.getElementById('btn-go');
+  btn.disabled=true;btn.textContent='⏳ Đang xử lý...';
+  document.getElementById('result-single').style.display='none';
+  const pw=document.getElementById('prog-wrap');pw.style.display='block';
+  const pf=document.getElementById('prog-fill'),pl=document.getElementById('prog-label');
+  try{
+    pf.style.width='25%';pl.textContent='Đang phân tích ảnh...';
+    const hash=await dHash(sDataURL);
+    pf.style.width='50%';pl.textContent='Kiểm tra trùng lặp...';
+    const {dist,entry}=await chkDup(hash);
+    if(dist<=THRESH&&entry){
+      pf.style.width='100%';
+      // For Drive mode, entry.thumb_url might be the only image ref
+      const thumbSrc=entry.imgData||entry.thumb_url||sDataURL;
+      showSingleResult(entry.code,thumbSrc,'dup',dist,entry.code,null);
+      status(`⚠️ Trùng ${sim(dist)}% với mã ${entry.code} (${dist}/64 bit)`);
+      return;
+    }
+    pf.style.width='70%';pl.textContent='Đang đóng mã...';
+    const warnE=(dist<=WARN&&entry)?entry:null;
+    const th=THEMES.find(t=>t.code===selTheme);
+    const code=await nextCode(th.code);
+    const blob=await stampImg(sDataURL,code);
+    sBlob=blob;sCode=code;
+    pf.style.width='85%';pl.textContent=storageMode==='drive'?'Đang upload lên Google Drive...':'Đang lưu...';
+    const entry2={code,theme:th.name,theme_code:th.code,folder:th.folder,
+      filename:sFile?.name||'',date_added:new Date().toLocaleDateString('vi-VN'),
+      hash,created_at:Date.now()};
+    const saved=await storeEntry(entry2,blob);
+    pf.style.width='100%';
+    const displaySrc=saved.imgData||URL.createObjectURL(blob);
+    showSingleResult(code,displaySrc,'ok',dist,null,warnE);
+    status(storageMode==='drive'?`✅ Đã upload ${code} lên Drive / ${th.folder}/`:`✅ Đã lưu ${code}`);
+    refreshCount();
+  }catch(e){status('❌ Lỗi: '+e.message);console.error(e);}
+  finally{btn.disabled=false;btn.textContent='🔖 Đóng mã & lưu';setTimeout(()=>pw.style.display='none',1200);}
+}
+
+function showSingleResult(code,imgSrc,type,dist,dupCode,warnE){
+  document.getElementById('res-thumb').src=imgSrc;
+  document.getElementById('res-thumb').onclick=()=>openLbSrc(imgSrc,code);
+  document.getElementById('res-code').textContent=code;sCode=code;
+  let badge='';
+  const sw=document.getElementById('sim-wrap');
+  if(type==='dup'){
+    badge=`<span class="badge badge-dup">🔁 Trùng lặp ${sim(dist)}%</span><br>
+           <small style="color:var(--text2);font-size:.75rem;margin-top:4px;display:block">Mã gốc: <strong style="color:var(--gold2)">${dupCode}</strong> · khoảng cách ${dist}/64 bit</small>`;
+    sw.style.display='block';
+    document.getElementById('sim-label').textContent=`Độ tương đồng: ${sim(dist)}%`;
+    const fill=document.getElementById('sim-fill');
+    fill.style.width=sim(dist)+'%';
+    fill.style.background=sim(dist)>90?'#ff6b6b':sim(dist)>70?'#ffa555':'#6de06d';
+  }else{
+    badge=`<span class="badge badge-ok">✅ Đóng mã thành công</span>`;
+    if(storageMode==='drive') badge+=` <span class="badge" style="background:rgba(42,90,138,.2);color:var(--blue2);border:1px solid var(--blue)">☁️ Drive</span>`;
+    if(warnE) badge+=`<br><small style="color:#ffaa50;font-size:.75rem;margin-top:4px;display:block">⚠️ Gần giống mã ${warnE.code} (${sim(dist)}% · ${dist} bit)</small>`;
+    sw.style.display='none';
+  }
+  document.getElementById('res-badge').innerHTML=badge;
+  document.getElementById('result-single').style.display='block';
+}
+
+function dlSingle(){
+  const src=document.getElementById('res-thumb').src;
+  if(!src||src===window.location.href)return;
+  const a=document.createElement('a');a.href=src;a.download=(sCode||'tranh')+'.jpg';a.click();
+}
+function copyCode(){if(sCode){navigator.clipboard.writeText(sCode);status('📋 Đã copy: '+sCode);}}
+
+async function doBatch(){
+  if(!bFiles.length||!selTheme)return;
+  const btn=document.getElementById('btn-go');btn.disabled=true;
+  document.getElementById('prog-wrap').style.display='block';
+  document.getElementById('batch-actions').style.display='none';
+  bBlobs={};bResults=[];
+  const th=THEMES.find(t=>t.code===selTheme),total=bFiles.length;
+  for(let i=0;i<total;i++){
+    document.getElementById('prog-fill').style.width=Math.round(i/total*100)+'%';
+    document.getElementById('prog-label').textContent=`${i}/${total} · ${bFiles[i].name}`;
+    setBRow(i,'—','<span class="badge badge-wait">⏳</span>');
+    try{
+      const dataURL=await readFile(bFiles[i]);
+      const hash=await dHash(dataURL);
+      const {dist,entry}=await chkDup(hash);
+      if(dist<=THRESH&&entry){
+        setBRow(i,entry.code,`<span class="badge badge-dup">🔁 ${sim(dist)}%</span>`);
+        bResults.push({code:entry.code,status:'dup',dist});continue;
+      }
+      const code=await nextCode(th.code);
+      const blob=await stampImg(dataURL,code);
+      const entry2={code,theme:th.name,theme_code:th.code,folder:th.folder,
+        filename:bFiles[i].name,date_added:new Date().toLocaleDateString('vi-VN'),
+        hash,created_at:Date.now()};
+      await storeEntry(entry2,blob);
+      bBlobs[code]=blob;
+      bResults.push({code,status:'ok',folder:th.folder});
+      let lbl=`<span class="badge badge-ok">✅</span>`;
+      if(storageMode==='drive') lbl+=` <span class="badge" style="background:rgba(42,90,138,.15);color:var(--blue2);border:1px solid var(--blue);font-size:.65rem">☁️</span>`;
+      if(dist<=WARN&&entry) lbl+=` <span class="badge badge-near" style="font-size:.65rem">~${sim(dist)}%</span>`;
+      setBRow(i,code,lbl);
+    }catch(e){
+      setBRow(i,'—','<span class="badge badge-err">❌</span>');
+      bResults.push({code:'',status:'err',msg:e.message});
+    }
+  }
+  document.getElementById('prog-fill').style.width='100%';
+  document.getElementById('prog-label').textContent=`Hoàn thành ${total} ảnh`;
+  const ok=bResults.filter(r=>r.status==='ok').length;
+  const dup=bResults.filter(r=>r.status==='dup').length;
+  const err=bResults.filter(r=>r.status==='err').length;
+  document.getElementById('batch-summary').innerHTML=
+    `<span style="color:#6de06d">✅ ${ok} mới</span> &nbsp;·&nbsp; `+
+    `<span style="color:var(--gold2)">🔁 ${dup} trùng</span> &nbsp;·&nbsp; `+
+    `<span style="color:#ff7070">❌ ${err} lỗi</span>`+
+    (storageMode==='drive'?` &nbsp;·&nbsp; <span style="color:var(--blue2)">☁️ Drive</span>`:'');
+  document.getElementById('batch-actions').style.display='block';
+  status(`Xong: ${ok} mới · ${dup} trùng · ${err} lỗi`);
+  btn.disabled=false;btn.textContent=`⚡ Đóng mã ${total} ảnh`;
+  refreshCount();
+}
+
+async function dlZip(){
+  const codes=Object.keys(bBlobs);
+  if(!codes.length){alert('Không có ảnh mới để tải');return;}
+  status('⏳ Đang tạo ZIP...');
+  const zip=new JSZip();
+  const all=storageMode==='drive'?catData:await dbAll();
+  for(const code of codes){
+    const entry=all.find(e=>e.code===code);
+    const folderName=entry?.folder||entry?.theme_code||'Khac';
+    zip.folder(folderName).file(code+'.jpg',bBlobs[code]);
+  }
+  const blob=await zip.generateAsync({type:'blob'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='tranh_'+new Date().toISOString().slice(0,10)+'.zip';
+  a.click();
+  status('✅ Đã tải ZIP phân thư mục: '+codes.length+' ảnh');
+}
+function clearBatch(){
+  bFiles=[];bBlobs={};bResults=[];
+  document.getElementById('batch-rows').innerHTML='';
+  document.getElementById('batch-info').textContent='';
+  document.getElementById('batch-scroll').style.display='none';
+  document.getElementById('batch-actions').style.display='none';
+  document.getElementById('batch-summary').textContent='';
+  document.getElementById('prog-wrap').style.display='none';
+  checkReady();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CATALOG — FOLDER VIEW
+// ══════════════════════════════════════════════════════════════════
+async function loadCat(){
+  catData=(await loadAllEntries()).sort((a,b)=>(b.created_at||0)-(a.created_at||0));
+  if(activeFolder) renderImgGrid();
+  else renderFolders();
+}
+function renderFolders(){
+  activeFolder=null;
+  document.getElementById('breadcrumb').style.display='none';
+  document.getElementById('folder-view').style.display='block';
+  document.getElementById('img-view').style.display='none';
+  const grid=document.getElementById('folder-grid');grid.innerHTML='';
+  let hasAny=false;
+  THEMES.forEach(th=>{
+    const items=catData.filter(r=>r.theme_code===th.code);
+    if(items.length) hasAny=true;
+    const card=document.createElement('div');card.className='folder-card';
+    const previews=items.slice(0,3).map(it=>{
+      const src=it.imgData||it.thumb_url||'';
+      return src?`<img src="${src}" onerror="this.style.display='none'">`:'';
+    }).join('');
+    card.innerHTML=`
+      <button class="fc-dl" onclick="dlFolderByCode('${th.code}',event)">⬇️ Tải</button>
+      <span class="fc-emoji">${th.emoji}</span>
+      <div class="fc-name">${th.name}</div>
+      <div class="fc-path">📁 ${th.folder}/</div>
+      <div class="fc-count"><strong>${items.length}</strong> mẫu</div>
+      ${previews?`<div class="fc-preview">${previews}</div>`:''}
+    `;
+    card.onclick=(e)=>{if(e.target.classList.contains('fc-dl')||e.target.closest('.fc-dl'))return;openFolder(th.code);};
+    grid.appendChild(card);
+  });
+  document.getElementById('folder-empty').style.display=hasAny?'none':'block';
+}
+function openFolder(themeCode){
+  activeFolder=themeCode;
+  const th=THEMES.find(t=>t.code===themeCode);
+  document.getElementById('folder-view').style.display='none';
+  document.getElementById('img-view').style.display='block';
+  document.getElementById('breadcrumb').style.display='flex';
+  document.getElementById('bc-current').textContent=th.emoji+' '+th.name+' / '+th.folder+'/';
+  document.getElementById('cat-q').value='';
+  catFiltered=catData.filter(r=>r.theme_code===themeCode);
+  catPage=1;renderImgGrid();
+}
+function exitFolder(){activeFolder=null;renderFolders();}
+function filterImg(){
+  const q=document.getElementById('cat-q').value.toLowerCase();
+  const base=catData.filter(r=>activeFolder?r.theme_code===activeFolder:true);
+  catFiltered=base.filter(r=>!q||(r.code||'').toLowerCase().includes(q)||(r.filename||'').toLowerCase().includes(q));
+  catPage=1;renderImgGrid();
+}
+function renderImgGrid(){
+  document.getElementById('cat-count').textContent=catFiltered.length+' mẫu';
+  const start=(catPage-1)*PAGE,page=catFiltered.slice(start,start+PAGE);
+  const grid=document.getElementById('cat-grid');
+  if(!page.length){grid.innerHTML='<div class="cat-empty">Thư mục trống</div>';document.getElementById('cat-pages').innerHTML='';return;}
+  grid.innerHTML='';
+  page.forEach(item=>{
+    const th=THEMES.find(t=>t.code===item.theme_code)||{};
+    const imgSrc=item.imgData||item.thumb_url||'';
+    const isDrive=!!item.drive_id;
+    const d=document.createElement('div');d.className='cat-card';
+    d.innerHTML=`
+      <img src="${imgSrc}" loading="lazy" onerror="this.style.height='40px';this.style.opacity='.3'"
+           onclick="openEntry('${item.code}','${imgSrc}','${item.drive_id||''}')">
+      <div class="ci">
+        <div class="ci-code">${item.code}${isDrive?'<span style="font-size:.6rem;color:var(--blue2);margin-left:4px">☁️</span>':''}
+          <button class="del-btn" onclick="askDel('${item.code}',event)">🗑️</button></div>
+        <div class="ci-sub">${item.filename||''}</div>
+        <div class="ci-sub" style="color:var(--text3)">📅 ${item.date_added||''}</div>
+      </div>`;
+    grid.appendChild(d);
+  });
+  const tp=Math.ceil(catFiltered.length/PAGE);
+  const pg=document.getElementById('cat-pages');pg.innerHTML='';
+  for(let p=1;p<=tp;p++){
+    const b=document.createElement('button');b.textContent=p;
+    if(p===catPage) b.classList.add('active');
+    b.onclick=()=>{catPage=p;renderImgGrid();};
+    pg.appendChild(b);
+  }
+}
+
+async function openEntry(code, thumbSrc, driveId){
+  if(driveId && storageMode==='drive' && driveToken){
+    // Load full image from Drive
+    status('⏳ Đang tải ảnh từ Drive...',5000);
+    try{
+      const fullSrc=await getDriveImageBlob(driveId);
+      openLbSrc(fullSrc,code);
+    }catch(e){
+      if(thumbSrc) openLbSrc(thumbSrc,code);
+    }
+  } else {
+    if(thumbSrc) openLbSrc(thumbSrc,code);
+  }
+}
+
+async function askDel(code,e){
+  e.stopPropagation();
+  if(!confirm(`Xoá mã ${code}?`))return;
+  await deleteEntry(code);
+  catFiltered=catFiltered.filter(r=>r.code!==code);
+  renderImgGrid();refreshCount();
+  status('🗑️ Đã xoá '+code+(storageMode==='drive'?' (Drive + catalog)':''));
+}
+
+async function dlFolder(){
+  const code=document.getElementById('breadcrumb').dataset.code||activeFolder;
+  if(code) dlFolderByCode(code);
+}
+async function dlFolderByCode(themeCode,e){
+  if(e) e.stopPropagation();
+  const th=THEMES.find(t=>t.code===themeCode);
+  const items=catData.filter(r=>r.theme_code===themeCode);
+  if(!items.length){alert('Thư mục này chưa có ảnh');return;}
+  if(storageMode==='drive'){
+    status(`⏳ Đang tải ${items.length} ảnh từ Drive...`,15000);
+    const zip=new JSZip();const folder=zip.folder(th.folder);
+    for(const item of items){
+      if(!item.drive_id)continue;
+      try{
+        await ensureToken();
+        const res=await fetch(`${DRIVE_API}/files/${item.drive_id}?alt=media`,{headers:{'Authorization':'Bearer '+driveToken}});
+        if(res.ok) folder.file(item.code+'.jpg',await res.blob());
+      }catch(err){}
+    }
+    const blob=await zip.generateAsync({type:'blob'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=th.folder+'_'+new Date().toISOString().slice(0,10)+'.zip';a.click();
+    status(`✅ Tải thư mục ${th.folder} từ Drive: ${items.length} ảnh`);
+  } else {
+    status(`⏳ Đang đóng gói ${items.length} ảnh...`);
+    const zip=new JSZip();const folder=zip.folder(th.folder);
+    for(const item of items){
+      if(!item.imgData)continue;
+      const res=await fetch(item.imgData);folder.file(item.code+'.jpg',await res.blob());
+    }
+    const blob=await zip.generateAsync({type:'blob'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=th.folder+'_'+new Date().toISOString().slice(0,10)+'.zip';a.click();
+    status(`✅ Tải thư mục ${th.folder}: ${items.length} ảnh`);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// LIGHTBOX
+// ══════════════════════════════════════════════════════════════════
+function openLbSrc(src,code){
+  if(!src||src===window.location.href)return;
+  document.getElementById('lb-img').src=src;
+  document.getElementById('lb-code').textContent=code;
+  document.getElementById('lb')._src=src;document.getElementById('lb')._code=code;
+  document.getElementById('lb').classList.add('on');
+}
+function closeLb(){document.getElementById('lb').classList.remove('on');}
+function dlLb(){const lb=document.getElementById('lb');const a=document.createElement('a');a.href=lb._src;a.download=(lb._code||'tranh')+'.jpg';a.click();}
+document.getElementById('lb').addEventListener('click',e=>{if(e.target===document.getElementById('lb'))closeLb();});
+
+// ══════════════════════════════════════════════════════════════════
+// LOGO
+// ══════════════════════════════════════════════════════════════════
+async function uploadLogo(f){if(!f)return;logoDataURL=await readFile(f);localStorage.setItem('logo',logoDataURL);showLogo(logoDataURL);status('✅ Đã cập nhật logo');}
+function showLogo(src){
+  document.getElementById('logo-img').src=src;document.getElementById('logo-img').style.display='block';
+  document.getElementById('logo-ph').style.display='none';document.getElementById('btn-rm-logo').style.display='inline-flex';
+  document.getElementById('hdr-logo').innerHTML=`<img src="${src}" style="width:32px;height:32px;object-fit:contain;border-radius:6px;border:1px solid var(--gold)">`;
+}
+function removeLogo(){
+  logoDataURL=null;localStorage.removeItem('logo');
+  document.getElementById('logo-img').style.display='none';document.getElementById('logo-ph').style.display='block';
+  document.getElementById('btn-rm-logo').style.display='none';
+  document.getElementById('hdr-logo').innerHTML='<span style="font-size:1.2rem">🖼️</span>';
+  status('Logo đã được xoá');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════════════════════════════
+function sThresh(v){THRESH=parseInt(v);document.getElementById('v-thresh').textContent=v;localStorage.setItem('thresh',v);}
+function sWarn(v){WARN=parseInt(v);document.getElementById('v-warn').textContent=v;localStorage.setItem('warn',v);}
+
+async function exportCSV(){
+  const data=activeFolder?catData.filter(r=>r.theme_code===activeFolder):catData;
+  const rows=[['Mã','Chủ đề','Thư mục','Tên file','Ngày thêm','Drive ID']];
+  data.forEach(r=>rows.push([r.code,r.theme,r.folder||'',r.filename||'',r.date_added||'',r.drive_id||'']));
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='catalog_'+(activeFolder||'all')+'_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  status('✅ Xuất CSV: '+data.length+' mẫu');
+}
+async function exportCSVAll(){catData=await loadAllEntries();exportCSV();}
+async function exportBackup(){
+  const all=await dbAll();
+  const a=document.createElement('a');
+  a.href='data:application/json,'+encodeURIComponent(JSON.stringify({v:3,date:new Date().toISOString(),data:all}));
+  a.download='backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  status('✅ Xuất backup: '+all.length+' mẫu');
+}
+async function importBackup(f){
+  if(!f)return;
+  const txt=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsText(f);});
+  try{
+    const {data}=JSON.parse(txt);if(!Array.isArray(data))throw new Error('Định dạng không hợp lệ');
+    for(const e of data) await dbPut(e);
+    status('✅ Đã nhập '+data.length+' mẫu');await loadCat();refreshCount();
+  }catch(e){alert('Lỗi: '+e.message);}
+}
+async function clearAll(){
+  if(!confirm('XOÁ TOÀN BỘ (offline)?'))return;if(!confirm('Xác nhận lần 2?'))return;
+  const all=await dbAll();for(const r of all) await dbDel(r.code);
+  catData=[];catFiltered=[];exitFolder();refreshCount();status('🗑️ Đã xoá toàn bộ (offline)');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════
+(async function(){
+  // Set current origin hint
+  document.getElementById('current-origin').textContent=window.location.origin;
+
+  // Open IndexedDB
+  try{DB=await openDB();}catch(e){console.error('DB error',e);}
+
+  // Restore settings
+  const t=localStorage.getItem('thresh');
+  if(t){THRESH=parseInt(t);document.getElementById('s-thresh').value=t;document.getElementById('v-thresh').textContent=t;}
+  else document.getElementById('s-thresh').value=10;
+  const w=localStorage.getItem('warn');
+  if(w){WARN=parseInt(w);document.getElementById('s-warn').value=w;document.getElementById('v-warn').textContent=w;}
+  else document.getElementById('s-warn').value=18;
+
+  // Restore logo
+  const savedLogo=localStorage.getItem('logo');
+  if(savedLogo){logoDataURL=savedLogo;showLogo(savedLogo);}
+
+  // Restore Drive settings
+  driveClientId=localStorage.getItem('drive_client_id')||'';
+  driveUserEmail=localStorage.getItem('drive_email')||'';
+  driveRootId=localStorage.getItem('drive_root_id')||null;
+  driveCatalogFileId=localStorage.getItem('drive_catalog_id')||null;
+  try{driveFolderIds=JSON.parse(localStorage.getItem('drive_folder_ids')||'{}');}catch(e){driveFolderIds={};}
+
+  const savedMode=localStorage.getItem('storage_mode')||'offline';
+  storageMode=savedMode;
+  updateStorageUI();
+
+  if(savedMode==='drive' && driveClientId){
+    // Show connected state optimistically, then silent auth
+    document.getElementById('drive-setup-box').style.display='none';
+    document.getElementById('drive-connected-box').style.display='block';
+    document.getElementById('drive-email').textContent='⏳ '+driveUserEmail;
+    document.getElementById('drive-folder-info').textContent='Đang kết nối lại...';
+    if(driveClientId) document.getElementById('drive-client-id').value=driveClientId;
+    silentReconnect();
+  } else if(driveClientId){
+    document.getElementById('drive-client-id').value=driveClientId;
+  }
+
+  // Build theme grid
+  const grid=document.getElementById('theme-grid');
+  THEMES.forEach(th=>{
+    const btn=document.createElement('button');btn.className='theme-btn';btn.dataset.code=th.code;
+    btn.innerHTML=`<span class="em">${th.emoji}</span><span class="nm">${th.name}</span><span class="cd">[${th.code}]</span>`;
+    btn.onclick=()=>{
+      grid.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('sel',b.dataset.code===th.code));
+      selTheme=th.code;checkReady();
+    };
+    grid.appendChild(btn);
+  });
+
+  setMode('single');
+  await refreshCount();
+})();
+</script>
+</body>
+</html>
