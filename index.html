@@ -1175,7 +1175,7 @@ function showCompare(beforeURL, afterURL, label){
 // REPLICATE AI UPSCALE
 // ══════════════════════════════════════════════════════════════════
 let replicateKey='';
-const REPLICATE_MODEL='nightmareai/real-esrgan:42fed1c4974146d4d2414e2be2c5277c7fcf05fcc3a73abf41610695738c1d7b';
+const REPLICATE_MODEL='nightmareai/real-esrgan'; // dùng latest version tự động
  
 function saveReplicateKey(v){
   replicateKey=v.trim();
@@ -1194,47 +1194,18 @@ async function doAiUpscale(){
   const btn=document.getElementById('btn-ai');
   const prog=document.getElementById('ai-prog');
   btn.disabled=true; btn.textContent='⏳';
-  prog.style.display='inline';prog.textContent='⏳ Đang gửi ảnh...';
+  prog.style.display='inline'; prog.textContent='⏳ Đang gửi ảnh...';
   try{
-    // Start prediction
-    const resp=await fetch('https://api.replicate.com/v1/predictions',{
-      method:'POST',
-      headers:{'Authorization':'Token '+replicateKey,'Content-Type':'application/json'},
-      body:JSON.stringify({version:REPLICATE_MODEL.split(':')[1],input:{image:sOrigDataURL,scale:4,face_enhance:false}})
-    });
-    if(!resp.ok){const e=await resp.json();throw new Error(e.detail||'API error');}
-    const pred=await resp.json();
-    prog.textContent='⏳ Đang xử lý AI (30-60s)...';
-    // Poll until done
-    let result=null;
-    for(let i=0;i<120;i++){
-      await new Promise(r=>setTimeout(r,2000));
-      const poll=await fetch('https://api.replicate.com/v1/predictions/'+pred.id,{
-        headers:{'Authorization':'Token '+replicateKey}
-      });
-      const data=await poll.json();
-      if(data.status==='succeeded'){result=data.output;break;}
-      if(data.status==='failed'){throw new Error(data.error||'Upscale thất bại');}
-      prog.textContent=`⏳ Đang xử lý AI... (${(i+1)*2}s)`;
-    }
-    if(!result) throw new Error('Timeout sau 4 phút');
-    // Fetch result image as dataURL
-    prog.textContent='⏳ Đang tải ảnh về...';
-    const imgResp=await fetch(result);
-    const blob=await imgResp.blob();
-    const upscaledURL=await blobToB64(blob);
-    // Update state — use upscaled as new working image
+    const upscaledURL=await doAiUpscaleURL(sOrigDataURL, null, prog);
     const beforeURL=sDataURL||sOrigDataURL;
     sDataURL=upscaledURL;
-    // Show compare
-    showCompare(beforeURL, upscaledURL,
-      `✅ AI Upscale 4× hoàn tất — kéo thanh trượt để so sánh trước/sau`);
+    showCompare(beforeURL, upscaledURL, '✅ AI Upscale 4× hoàn tất — kéo để so sánh');
     prog.style.display='none';
     btn.textContent='✅ Done';
-    status('🚀 AI Upscale 4× hoàn tất! Ảnh đã sẵn sàng đóng mã.');
+    status('🚀 AI Upscale 4× hoàn tất!');
   }catch(e){
     prog.style.display='none';
-    btn.disabled=false;btn.textContent='Upscale 4×';
+    btn.disabled=false; btn.textContent='Upscale 4×';
     status('❌ AI Upscale lỗi: '+e.message);
     console.error(e);
   }
@@ -2176,34 +2147,58 @@ function clearShBatch(){
   checkShReady();
 }
  
-// AI upscale helper that takes/returns dataURL (for sharpen page)
+// AI upscale helper that takes/returns dataURL
 async function doAiUpscaleURL(origURL, pf, pl){
   if(!replicateKey) throw new Error('Chưa có Replicate API token. Vào Cài đặt để nhập.');
-  if(pl) pl.textContent='⏳ Đang gửi ảnh lên AI...';
-  const resp=await fetch('https://api.replicate.com/v1/predictions',{
+ 
+  const setMsg=m=>{if(pl){if(pl.textContent!==undefined)pl.textContent=m;else pl.innerHTML=m;}};
+  setMsg('⏳ Đang gửi ảnh lên AI...');
+ 
+  // Dùng endpoint model/owner/name (không cần version hash) + Prefer:wait để sync
+  const endpoint=`https://api.replicate.com/v1/models/${REPLICATE_MODEL}/predictions`;
+  const resp=await fetch(endpoint,{
     method:'POST',
-    headers:{'Authorization':'Token '+replicateKey,'Content-Type':'application/json'},
-    body:JSON.stringify({version:REPLICATE_MODEL.split(':')[1],input:{image:origURL,scale:4,face_enhance:false}})
+    headers:{
+      'Authorization':'Bearer '+replicateKey,
+      'Content-Type':'application/json',
+      'Prefer':'wait=60'
+    },
+    body:JSON.stringify({input:{image:origURL,scale:4,face_enhance:false}})
   });
-  if(!resp.ok){const e=await resp.json();throw new Error(e.detail||'API error');}
-  const pred=await resp.json();
-  for(let i=0;i<120;i++){
-    await new Promise(r=>setTimeout(r,2000));
-    const poll=await fetch('https://api.replicate.com/v1/predictions/'+pred.id,{
-      headers:{'Authorization':'Token '+replicateKey}
-    });
-    const data=await poll.json();
-    if(data.status==='succeeded'){
-      if(pl) pl.textContent='⏳ Đang tải ảnh về...';
-      const imgResp=await fetch(data.output);
-      const blob=await imgResp.blob();
-      return await blobToB64(blob);
-    }
-    if(data.status==='failed') throw new Error(data.error||'Upscale thất bại');
-    if(pf) pf.style.width=Math.min(20+(i+1)*0.6,65)+'%';
-    if(pl) pl.textContent=`⏳ AI đang xử lý... (${(i+1)*2}s)`;
+ 
+  if(!resp.ok){
+    let msg='API error '+resp.status;
+    try{const e=await resp.json();msg=e.detail||e.error||msg;}catch(e){}
+    throw new Error(msg);
   }
-  throw new Error('Timeout sau 4 phút');
+ 
+  let data=await resp.json();
+  setMsg('⏳ AI đang xử lý...');
+ 
+  // Nếu chưa xong (timeout Prefer:wait), tiếp tục poll
+  let elapsed=0;
+  while(data.status!=='succeeded'&&data.status!=='failed'){
+    await new Promise(r=>setTimeout(r,2500));
+    elapsed+=2.5;
+    const poll=await fetch('https://api.replicate.com/v1/predictions/'+data.id,{
+      headers:{'Authorization':'Bearer '+replicateKey}
+    });
+    data=await poll.json();
+    if(pf) pf.style.width=Math.min(20+elapsed*0.8,75)+'%';
+    setMsg(`⏳ AI đang xử lý... (${Math.round(elapsed)}s)`);
+  }
+ 
+  if(data.status==='failed') throw new Error(data.error||'Upscale thất bại');
+ 
+  // Lấy URL output (có thể là string hoặc array)
+  const outputURL=Array.isArray(data.output)?data.output[0]:data.output;
+  if(!outputURL) throw new Error('Không nhận được kết quả từ AI');
+ 
+  setMsg('⏳ Đang tải ảnh về...');
+  const imgResp=await fetch(outputURL);
+  if(!imgResp.ok) throw new Error('Không tải được ảnh kết quả');
+  const blob=await imgResp.blob();
+  return await blobToB64(blob);
 }
 </script>
 </body>
