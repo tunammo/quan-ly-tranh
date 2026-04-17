@@ -966,6 +966,13 @@ canvas{display:none}
 <canvas id="cv2"></canvas>
 
 <script>
+// Global error handler — catch unhandled errors and show them
+window.addEventListener('error',e=>{
+  console.error('Uncaught error:',e.error||e.message);
+});
+window.addEventListener('unhandledrejection',e=>{
+  console.error('Unhandled promise rejection:',e.reason);
+});
 // ══════════════════════════════════════════════════════════════════
 // CONSTANTS & STATE
 // ══════════════════════════════════════════════════════════════════
@@ -1609,16 +1616,16 @@ function blobToB64(blob){return new Promise(res=>{const r=new FileReader();r.onl
 // ══════════════════════════════════════════════════════════════════
 let cmpDragging=false;
 function initCompare(){
-  const wrap=document.getElementById('compare-wrap');
+  const wrap=document.getElementById('sh-compare-wrap');
   if(!wrap)return;
   const move=e=>{
     if(!cmpDragging)return;
     const r=wrap.getBoundingClientRect();
     const x=Math.min(Math.max((e.clientX||e.touches[0].clientX)-r.left,0),r.width);
     const pct=x/r.width*100;
-    document.getElementById('cmp-after-clip').style.width=pct+'%';
-    document.getElementById('cmp-line').style.left=pct+'%';
-    document.querySelector('.compare-handle-btn').style.left=pct+'%';
+    const clip=document.getElementById('sh-cmp-after-clip');if(clip)clip.style.width=pct+'%';
+    const line=document.getElementById('sh-cmp-line');if(line)line.style.left=pct+'%';
+    const hBtn=wrap.querySelector('.compare-handle-btn');if(hBtn)hBtn.style.left=pct+'%';
   };
   wrap.addEventListener('mousedown',e=>{cmpDragging=true;move(e);});
   wrap.addEventListener('touchstart',e=>{cmpDragging=true;move(e);},{passive:true});
@@ -1629,24 +1636,8 @@ function initCompare(){
 }
 
 function showCompare(beforeURL, afterURL, label){
-  // Fix after image width to match container
-  const wrap=document.getElementById('compare-wrap');
-  const beforeImg=document.getElementById('cmp-before');
-  const afterImg=document.getElementById('cmp-after');
-  beforeImg.src=beforeURL;
-  afterImg.src=afterURL;
-  // After image needs same width as container for clip to work
-  beforeImg.onload=()=>{
-    afterImg.style.width=wrap.offsetWidth+'px';
-  };
-  // Reset to 50%
-  document.getElementById('cmp-after-clip').style.width='50%';
-  document.getElementById('cmp-line').style.left='50%';
-  document.querySelector('.compare-handle-btn').style.left='50%';
-  document.getElementById('compare-label').textContent=label||'';
-  document.getElementById('compare-box').style.display='block';
-  document.getElementById('prev-box').style.display='none';
-  initCompare();
+  // Delegate to sharpen page compare (these elements exist there)
+  initShCompare(beforeURL, afterURL, label);
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1670,21 +1661,21 @@ async function doAiUpscale(){
     return;
   }
   if(!sOrigDataURL){alert('Chưa có ảnh nào được chọn.');return;}
-  const btn=document.getElementById('btn-ai');
-  const prog=document.getElementById('ai-prog');
-  btn.disabled=true; btn.textContent='⏳';
-  prog.style.display='inline'; prog.textContent='⏳ Đang gửi ảnh...';
+  const btn=document.getElementById('sh-btn-go');
+  const prog=document.getElementById('sh-prog-label');
+  if(btn){btn.disabled=true; btn.textContent='⏳';}
+  if(prog){prog.style.display='inline'; prog.textContent='⏳ Đang gửi ảnh...';}
   try{
     const upscaledURL=await doAiUpscaleURL(sOrigDataURL, null, prog, sharpenMode==='ai-face');
     const beforeURL=sDataURL||sOrigDataURL;
     sDataURL=upscaledURL;
     showCompare(beforeURL, upscaledURL, '✅ AI Upscale 4× hoàn tất — kéo để so sánh');
-    prog.style.display='none';
-    btn.textContent='✅ Done';
+    if(prog)prog.style.display='none';
+    if(btn)btn.textContent='✅ Done';
     status('🚀 AI Upscale 4× hoàn tất!');
   }catch(e){
-    prog.style.display='none';
-    btn.disabled=false; btn.textContent='Upscale 4×';
+    if(prog)prog.style.display='none';
+    if(btn){btn.disabled=false; btn.textContent='Upscale 4×';}
     status('❌ AI Upscale lỗi: '+e.message);
     console.error(e);
   }
@@ -1697,9 +1688,9 @@ async function doAiUpscale(){
 async function applySharpenToPreview(origURL){
   // AI modes don't auto-apply on pick (too slow/costly) — just show original
   sDataURL=origURL;
-  document.getElementById('prev-img').src=origURL;
-  document.getElementById('prev-box').style.display='block';
-  document.getElementById('compare-box').style.display='none';
+  const prevImg=document.getElementById('prev-img');if(prevImg)prevImg.src=origURL;
+  const prevBox=document.getElementById('prev-box');if(prevBox)prevBox.style.display='block';
+  const cmpBox=document.getElementById('sh-compare-box');if(cmpBox)cmpBox.style.display='none';
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -3251,6 +3242,7 @@ async function autoSaveFiles(entry, fileInBlob, mockupBlob){
 // INIT
 // ══════════════════════════════════════════════════════════════════
 (async function(){
+try{
   // Set current origin hint
   document.getElementById('current-origin').textContent=window.location.origin;
 
@@ -3293,7 +3285,7 @@ async function autoSaveFiles(entry, fileInBlob, mockupBlob){
   updateStorageUI();
 
   // Restore File System Access directory handle
-  restoreSaveDirHandle();
+  try{await restoreSaveDirHandle();}catch(e){console.log('FSA restore skipped:',e);}
 
   if(savedMode==='drive' && driveClientId){
     // Show connected state optimistically, then silent auth
@@ -3327,6 +3319,14 @@ async function autoSaveFiles(entry, fileInBlob, mockupBlob){
   setMode('single');
   setShMode('single');
   await refreshCount();
+}catch(initErr){
+  console.error('INIT ERROR:',initErr);
+  // Show error to user so they can report it
+  const errDiv=document.createElement('div');
+  errDiv.style.cssText='position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:9999;background:#2a0a0a;border:2px solid #ff4444;border-radius:12px;padding:16px 24px;color:#ff7070;font-size:.85rem;max-width:80vw;box-shadow:0 8px 32px rgba(0,0,0,.5)';
+  errDiv.innerHTML='<b>⚠️ Lỗi khởi tạo:</b> '+initErr.message+'<br><small style="color:#aaa">Nhấn F12 → Console để xem chi tiết. Thử reload (Ctrl+Shift+R) để xoá cache.</small><br><button onclick="this.parentElement.remove()" style="margin-top:8px;padding:4px 12px;background:#333;border:1px solid #555;color:#fff;border-radius:6px;cursor:pointer">Đóng</button>';
+  document.body.appendChild(errDiv);
+}
 })();
 
 // ══════════════════════════════════════════════════════════════════
@@ -3339,18 +3339,19 @@ let shCmpDragging=false;
 
 function setShMode(m){
   shMode=m;
-  document.getElementById('sh-zone-single').style.display=m==='single'?'block':'none';
-  document.getElementById('sh-zone-batch').style.display=m==='batch'?'block':'none';
-  document.getElementById('sh-result-single').style.display='none';
-  document.getElementById('sh-batch-actions').style.display='none';
-  document.getElementById('sh-mode-single-btn').className='btn '+(m==='single'?'btn-primary':'btn-ghost');
-  document.getElementById('sh-mode-batch-btn').className='btn '+(m==='batch'?'btn-primary':'btn-ghost');
+  const el=id=>document.getElementById(id);
+  const zs=el('sh-zone-single');if(zs)zs.style.display=m==='single'?'block':'none';
+  const zb=el('sh-zone-batch');if(zb)zb.style.display=m==='batch'?'block':'none';
+  const rs=el('sh-result-single');if(rs)rs.style.display='none';
+  const ba=el('sh-batch-actions');if(ba)ba.style.display='none';
+  const sb=el('sh-mode-single-btn');if(sb)sb.className='btn '+(m==='single'?'btn-primary':'btn-ghost');
+  const bb=el('sh-mode-batch-btn');if(bb)bb.className='btn '+(m==='batch'?'btn-primary':'btn-ghost');
   checkShReady();
 }
 
 function checkShReady(){
   const ok = sharpenMode!=='off' && (shMode==='single'?!!shOrigURL:shBatchFiles.length>0);
-  document.getElementById('sh-btn-go').disabled=!ok;
+  const btn=document.getElementById('sh-btn-go');if(btn)btn.disabled=!ok;
 }
 
 function setSharpen(mode){
@@ -3787,4 +3788,42 @@ async function dcScanBatch(){
         badge='<span class="badge badge-near" style="font-size:.7rem">⚠️ ~'+sim(best)+'%</span>';
         detail='<span style="color:var(--text2)">'+bestE.code+'</span>';
       } else {
-        badge='<span class="badge badge-ok">✅ M
+        badge='<span class="badge badge-ok">✅ Mới</span>';
+        detail='';
+      }
+      row.innerHTML='<span style="font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">'+dcBatchFiles[i].name+'</span><span>'+detail+'</span><span>'+badge+'</span>';
+      rows.appendChild(row);
+    }catch(e){
+      dcBatchResults.push({name:dcBatchFiles[i].name,status:'err'});
+      const row=document.createElement('div');
+      row.className='brow'; row.dataset.status='err';
+      row.innerHTML='<span style="font-size:.78rem">'+dcBatchFiles[i].name+'</span><span></span><span><span class="badge badge-err">❌</span></span>';
+      rows.appendChild(row);
+    }
+  }
+
+  pf.style.width='100%'; pl.textContent='Hoàn tất!';
+
+  // Summary
+  const dups=dcBatchResults.filter(r=>r.status==='dup').length;
+  const warns=dcBatchResults.filter(r=>r.status==='warn').length;
+  const oks=dcBatchResults.filter(r=>r.status==='ok').length;
+  document.getElementById('dc-batch-summary').textContent=
+    `📊 ${total} ảnh · 🔁 ${dups} trùng · ⚠️ ${warns} gần giống · ✅ ${oks} mới`;
+
+  document.getElementById('dc-batch-result').style.display='block';
+  btn.disabled=false; btn.textContent='🔍 Quét lại';
+  status(`🔍 Đã quét ${total} ảnh: ${dups} trùng, ${warns} cảnh báo, ${oks} mới`);
+}
+
+function dcFilterResult(filter){
+  const rows=document.getElementById('dc-batch-rows').children;
+  for(const row of rows){
+    if(filter==='all') row.style.display='';
+    else if(filter==='dup') row.style.display=(row.dataset.status==='dup'||row.dataset.status==='warn')?'':'none';
+    else if(filter==='ok') row.style.display=row.dataset.status==='ok'?'':'none';
+  }
+}
+</script>
+</body>
+</html>
