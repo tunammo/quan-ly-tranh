@@ -2009,53 +2009,73 @@ async function createMockupFromTemplate(paintingURLs, templateURL, frames){
       else{dh=fh;dw=fh*imgAR;dy=fy;dx=fx+(fw-dw)/2;}
       // ── Draw Khung 521 frame ──
       drawKhung521(ctx,dx,dy,dw,dh);
-      // ── Inset painting inside frame ──
-      const borderW=Math.max(3,Math.min(dw,dh)*0.035); // ~3.5% of smaller dim
+      // ── Inset painting inside frame (thin 9mm edge) ──
+      const borderW=Math.max(2,Math.min(dw,dh)*0.012); // ~1.2% = slim 9mm edge
       ctx.drawImage(painting,dx+borderW,dy+borderW,dw-borderW*2,dh-borderW*2);
     }catch(e){}
   }
   return cv.toDataURL('image/jpeg',0.93);
 }
 
-/* ── Khung 521: composite frame — 9mm edge, 34mm depth ── */
+/* ── Khung 521: composite frame — 9mm slim face, 34mm deep ──
+   Strategy: very thin visible edge, but DEEP shadow + 3D side
+   to show the 34mm depth that makes this frame special.
+   From front view: slim line. The depth reveals itself through
+   shadow cast on the wall and a subtle visible side edge. */
 function drawKhung521(ctx,x,y,w,h){
   const fc=FRAME_COLORS.find(c=>c.key===selFrame)||FRAME_COLORS[0];
-  const bw=Math.max(3,Math.min(w,h)*0.035); // frame border width (~3.5%)
+  const bw=Math.max(2,Math.min(w,h)*0.012); // visible face: ~1.2% = slim 9mm
+  const depth=bw*3.8; // shadow depth represents 34mm (≈3.8× the 9mm face)
 
   ctx.save();
-  // Drop shadow behind frame
-  ctx.shadowColor=fc.shadow;ctx.shadowBlur=bw*2.5;ctx.shadowOffsetX=bw*0.5;ctx.shadowOffsetY=bw*0.8;
+
+  // ── 1. Deep wall shadow (34mm depth → prominent shadow) ──
+  // This is the key visual that shows the frame sticks out from wall
+  ctx.shadowColor=fc.shadow;
+  ctx.shadowBlur=depth*1.8;
+  ctx.shadowOffsetX=depth*0.4;
+  ctx.shadowOffsetY=depth*0.6;
   ctx.fillStyle=fc.outer;
   ctx.fillRect(x-bw,y-bw,w+bw*2,h+bw*2);
-  ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+  ctx.shadowColor='transparent';ctx.shadowBlur=0;
+  ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
 
-  // Outer frame fill
+  // ── 2. Visible side edge (depth showing on right & bottom) ──
+  // When a deep frame is on the wall, you see a sliver of its side
+  const sideW=Math.max(1,depth*0.15); // subtle visible depth edge
+  // Right side edge (slightly darker = shadow side)
+  const rGrad=ctx.createLinearGradient(x+w+bw,y,x+w+bw+sideW,y);
+  rGrad.addColorStop(0,fc.outer);rGrad.addColorStop(1,fc.inner);
+  ctx.fillStyle=rGrad;
+  ctx.fillRect(x+w+bw,y-bw,sideW,h+bw*2+sideW);
+  // Bottom side edge
+  const bGrad=ctx.createLinearGradient(x,y+h+bw,x,y+h+bw+sideW);
+  bGrad.addColorStop(0,fc.outer);bGrad.addColorStop(1,fc.inner);
+  ctx.fillStyle=bGrad;
+  ctx.fillRect(x-bw,y+h+bw,w+bw*2+sideW,sideW);
+
+  // ── 3. Frame face (thin 9mm front) ──
   ctx.fillStyle=fc.outer;
   ctx.fillRect(x-bw,y-bw,w+bw*2,h+bw*2);
 
-  // Inner lighter strip (depth illusion — inside edge)
-  const inset=bw*0.35;
-  ctx.fillStyle=fc.inner;
-  ctx.fillRect(x-bw+inset,y-bw+inset,w+bw*2-inset*2,h+bw*2-inset*2);
-
-  // Edge highlight (top-left light)
+  // ── 4. Subtle face gradient (top-left light → bottom-right dark) ──
+  // Top edge: lighter
   ctx.fillStyle=fc.edge;
-  // Top edge highlight
-  ctx.fillRect(x-bw,y-bw,w+bw*2,inset);
-  // Left edge highlight
-  ctx.fillRect(x-bw,y-bw,inset,h+bw*2);
+  ctx.fillRect(x-bw,y-bw,w+bw*2,Math.max(1,bw*0.4));
+  // Left edge: lighter
+  ctx.fillRect(x-bw,y-bw,Math.max(1,bw*0.4),h+bw*2);
+  // Bottom face edge: darker
+  ctx.fillStyle='rgba(0,0,0,.15)';
+  ctx.fillRect(x-bw,y+h+bw-Math.max(1,bw*0.3),w+bw*2,Math.max(1,bw*0.3));
+  // Right face edge: darker
+  ctx.fillRect(x+w+bw-Math.max(1,bw*0.3),y-bw,Math.max(1,bw*0.3),h+bw*2);
 
-  // Inner shadow (simulates depth — bottom-right darker)
-  ctx.fillStyle='rgba(0,0,0,.18)';
-  ctx.fillRect(x-bw,y+h+bw-inset,w+bw*2,inset);
-  ctx.fillRect(x+w+bw-inset,y-bw,inset,h+bw*2);
-
-  // Thin inner border (where painting meets frame)
-  ctx.strokeStyle='rgba(0,0,0,.25)';
-  ctx.lineWidth=Math.max(0.5,bw*0.08);
+  // ── 5. Inner edge line (where canvas meets frame) ──
+  ctx.strokeStyle='rgba(0,0,0,.2)';
+  ctx.lineWidth=Math.max(0.5,bw*0.12);
   ctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
 
-  // Thin outer border
+  // ── 6. Outer highlight line ──
   ctx.strokeStyle=fc.edge;
   ctx.lineWidth=Math.max(0.5,bw*0.1);
   ctx.strokeRect(x-bw+0.5,y-bw+0.5,w+bw*2-1,h+bw*2-1);
