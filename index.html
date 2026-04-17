@@ -307,8 +307,18 @@ canvas{display:none}
     </div>
   </div>
 
-  <!-- Theme -->
+  <!-- Stamp mode -->
   <div class="card">
+    <div class="card-title">Chế độ đóng dấu</div>
+    <div class="btn-row" style="margin:0">
+      <button class="btn btn-primary" id="sm-code" onclick="setStampMode('code')">🔖 Đóng mã + Logo</button>
+      <button class="btn btn-ghost" id="sm-logo" onclick="setStampMode('logo')">🏷️ Chỉ đóng Logo</button>
+    </div>
+    <div id="stamp-mode-hint" style="font-size:.75rem;color:var(--text3);margin-top:8px">Ảnh được gắn mã SKU + logo vào tem</div>
+  </div>
+
+  <!-- Theme (hidden in logo-only mode) -->
+  <div class="card" id="card-theme">
     <div class="card-title">Chọn chủ đề</div>
     <div class="theme-grid" id="theme-grid"></div>
   </div>
@@ -816,6 +826,34 @@ canvas{display:none}
         <input type="file" id="logo-file" accept="image/*" style="display:none" onchange="uploadLogo(this.files[0])">
       </div>
     </div>
+
+    <!-- Logo size -->
+    <div class="setting-item" style="margin-top:16px">
+      <div class="setting-label"><strong>Kích thước logo</strong><span>Tỉ lệ so với mặc định</span></div>
+      <div class="setting-control">
+        <input type="range" min="30" max="250" value="100" id="s-logo-size" oninput="setLogoSize(this.value)">
+        <span class="val" id="v-logo-size">100%</span>
+      </div>
+    </div>
+
+    <!-- Stamp position -->
+    <div style="margin-top:14px">
+      <div style="font-size:.78rem;font-weight:700;color:var(--text);margin-bottom:8px">Vị trí tem trên ảnh</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;max-width:260px" id="logo-pos-grid">
+        <button class="btn btn-ghost" id="pos-tl" onclick="setLogoPos('tl')" style="font-size:.78rem;justify-content:center">↖ Trên trái</button>
+        <button class="btn btn-ghost" id="pos-tr" onclick="setLogoPos('tr')" style="font-size:.78rem;justify-content:center">↗ Trên phải</button>
+        <button class="btn btn-ghost" id="pos-bl" onclick="setLogoPos('bl')" style="font-size:.78rem;justify-content:center">↙ Dưới trái</button>
+        <button class="btn btn-ghost" id="pos-br" onclick="setLogoPos('br')" style="font-size:.78rem;justify-content:center">↘ Dưới phải</button>
+      </div>
+    </div>
+
+    <!-- Stamp preview -->
+    <div id="stamp-preview-box" style="margin-top:16px;display:none">
+      <div style="font-size:.75rem;color:var(--text3);margin-bottom:6px">Preview tem đóng mã:</div>
+      <div style="position:relative;display:inline-block;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg3)">
+        <canvas id="stamp-preview-cv" style="display:block;max-width:100%;max-height:250px"></canvas>
+      </div>
+    </div>
   </div>
 
   <!-- Duplicate detection -->
@@ -942,6 +980,9 @@ let bFiles=[], bBlobs={}, bResults=[];
 let catData=[], catFiltered=[], catPage=1, activeFolder=null;
 let THRESH=10, WARN=18;
 let logoDataURL=null;
+let logoSize=1.0;   // multiplier: 0.5–2.0 (default 1.0 = auto)
+let logoPos='bl';   // position: 'bl'=bottom-left, 'br'=bottom-right, 'tl'=top-left, 'tr'=top-right
+let stampMode='code'; // 'code' = mã + logo (mặc định), 'logo' = chỉ logo
 
 // Workflow state
 let workflow='filein'; // 'filein' | 'mockup'
@@ -1455,14 +1496,43 @@ async function stampImg(dataURL,code){
   const cv=document.getElementById('cv2');
   cv.width=img.width;cv.height=img.height;
   const ctx=cv.getContext('2d');ctx.drawImage(img,0,0);
-  const sc=Math.min(img.width,img.height)/800;
-  const fs=Math.round(Math.max(16,26*sc)),pad=fs*.55,mg=fs*.7;
+  await drawStamp(ctx,img.width,img.height,code);
+  return new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error('Canvas error')),'image/jpeg',.93));
+}
+/* Core stamp drawing — reusable for preview and real stamp
+   mode: 'code' = mã + logo (default), 'logo' = chỉ logo */
+async function drawStamp(ctx,W,H,code,mode){
+  if(!mode) mode=stampMode||'code';
+  const sc=Math.min(W,H)/800;
+  const baseFontSz=Math.round(Math.max(16,26*sc));
+  const fs=Math.round(baseFontSz*logoSize);
+  const pad=fs*.55,mg=fs*.7;
+  const hasLogo=!!logoDataURL;
+
+  if(mode==='logo' && hasLogo){
+    // ── Logo-only: just the logo image, no background pill ──
+    const lsz=Math.round(fs*2.2); // larger logo when alone
+    let x,y;
+    if(logoPos==='tl'){x=mg;y=mg;}
+    else if(logoPos==='tr'){x=W-lsz-mg;y=mg;}
+    else if(logoPos==='br'){x=W-lsz-mg;y=H-lsz-mg;}
+    else{x=mg;y=H-lsz-mg;}
+    ctx.shadowColor='rgba(0,0,0,.6)';ctx.shadowBlur=lsz*0.3;
+    try{const li=await loadImg(logoDataURL);ctx.drawImage(li,x,y,lsz,lsz);}catch(e){}
+    ctx.shadowBlur=0;
+    return;
+  }
+
+  // ── Code + logo mode (default) ──
   ctx.font=`900 ${fs}px 'Courier New',monospace`;
   const tw=ctx.measureText(code).width;
-  const hasLogo=!!logoDataURL;
   const lsz=hasLogo?Math.round(fs*1.35):0,lgap=hasLogo?Math.round(fs*.45):0;
   const bw=pad*2+tw+(hasLogo?lsz+lgap:0),bh=Math.max(fs+pad*1.3,hasLogo?lsz+pad*.8:0);
-  const x=mg,y=img.height-bh-mg;
+  let x,y;
+  if(logoPos==='tl'){x=mg;y=mg;}
+  else if(logoPos==='tr'){x=W-bw-mg;y=mg;}
+  else if(logoPos==='br'){x=W-bw-mg;y=H-bh-mg;}
+  else{x=mg;y=H-bh-mg;}
   ctx.shadowColor='rgba(0,0,0,.9)';ctx.shadowBlur=16;
   ctx.fillStyle='rgba(12,9,3,.88)';rr(ctx,x,y,bw,bh,bh/2.2);ctx.fill();
   ctx.shadowBlur=0;ctx.strokeStyle='#c8923a';ctx.lineWidth=Math.max(1.5,2.2*sc);
@@ -1472,7 +1542,7 @@ async function stampImg(dataURL,code){
   ctx.fillStyle='#ffd275';ctx.font=`900 ${fs}px 'Courier New',monospace`;
   ctx.shadowColor='rgba(200,146,58,.6)';ctx.shadowBlur=7;
   ctx.fillText(code,tx2,ty);
-  return new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error('Canvas error')),'image/jpeg',.93));
+  ctx.shadowBlur=0;
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1614,7 +1684,10 @@ function hasRoomMockups(){return (mockupLib[selRoom]||[]).some(m=>m.frame);}
 function checkReady(){
   let ok=false;
   const hasMock=hasRoomMockups();
-  if(mode==='set'){
+  if(stampMode==='logo'){
+    // Logo-only: just need image(s) and logo uploaded
+    ok=!!logoDataURL && (mode==='single'?!!sDataURL:mode==='set'?setDataURLs.length>=2:bFiles.length>0);
+  }else if(mode==='set'){
     if(workflow==='filein'){
       ok=selTheme && hasMock && setDataURLs.length>=2;
     }else{
@@ -1626,7 +1699,11 @@ function checkReady(){
     ok=selTheme && (mode==='single'?!!sDataURL:bFiles.length>0);
   }
   document.getElementById('btn-go').disabled=!ok;
-  if(mode==='single'){
+  if(stampMode==='logo'){
+    if(mode==='single') document.getElementById('btn-go').textContent='🏷️ Đóng logo';
+    else if(mode==='set') document.getElementById('btn-go').textContent=`🏷️ Đóng logo ${setDataURLs.length} ảnh`;
+    else document.getElementById('btn-go').textContent=`🏷️ Đóng logo ${bFiles.length} ảnh`;
+  }else if(mode==='single'){
     document.getElementById('btn-go').textContent=workflow==='filein'?'🔖 Đóng mã + Tạo mockup':'🔖 Đóng mã mockup';
   }else if(mode==='set'){
     document.getElementById('btn-go').textContent=`🎨 Đóng mã bộ ${setDataURLs.length} tranh`;
@@ -1684,7 +1761,7 @@ function setWorkflow(wf){
   workflow=wf;
   document.getElementById('wf-filein').classList.toggle('sel',wf==='filein');
   document.getElementById('wf-mockup').classList.toggle('sel',wf==='mockup');
-  document.getElementById('card-room-select').style.display=wf==='filein'?'block':'none';
+  document.getElementById('card-room-select').style.display=(wf==='filein'&&stampMode!=='logo')?'block':'none';
   document.getElementById('upload-card-title').textContent=wf==='filein'?'Chọn ảnh gốc (file in)':'Chọn ảnh mockup';
   document.getElementById('mockup-prev').style.display='none';
   mockupDataURL=null;
@@ -2164,7 +2241,61 @@ function setBRow(i,code,badgeHTML){
 // ══════════════════════════════════════════════════════════════════
 // PROCESS
 // ══════════════════════════════════════════════════════════════════
-async function doProcess(){if(!selTheme)return;mode==='single'?await doSingle():mode==='set'?await doSet():await doBatch();}
+async function doProcess(){
+  if(stampMode==='logo'){
+    // Logo-only mode: stamp logo on images, download directly (no catalog)
+    mode==='single'?await doLogoSingle():await doLogoBatch();
+    return;
+  }
+  if(!selTheme)return;mode==='single'?await doSingle():mode==='set'?await doSet():await doBatch();
+}
+
+/* ── Logo-only: single image ── */
+async function doLogoSingle(){
+  if(!sDataURL||!logoDataURL)return;
+  const btn=document.getElementById('btn-go');btn.disabled=true;btn.textContent='⏳ Đang xử lý...';
+  try{
+    const img=await loadImg(sDataURL);
+    const cv=document.getElementById('cv2');cv.width=img.width;cv.height=img.height;
+    const ctx=cv.getContext('2d');ctx.drawImage(img,0,0);
+    await drawStamp(ctx,img.width,img.height,'','logo');
+    cv.toBlob(b=>{
+      if(!b)return;
+      const a=document.createElement('a');a.href=URL.createObjectURL(b);
+      a.download=(sFile?sFile.name.replace(/\.[^.]+$/,''):'image')+'_logo.jpg';a.click();
+      status('✅ Đã tải ảnh đóng logo');
+      btn.disabled=false;btn.textContent='🏷️ Đóng logo';
+    },'image/jpeg',0.93);
+  }catch(e){status('❌ Lỗi: '+e.message);btn.disabled=false;btn.textContent='🏷️ Đóng logo';}
+}
+/* ── Logo-only: batch / set ── */
+async function doLogoBatch(){
+  const files=mode==='set'?setFiles:bFiles;
+  const dataURLs=mode==='set'?setDataURLs:null;
+  if(!files.length||!logoDataURL)return;
+  const btn=document.getElementById('btn-go');btn.disabled=true;
+  document.getElementById('prog-wrap').style.display='block';
+  const zip=new JSZip();const total=files.length;
+  for(let i=0;i<total;i++){
+    document.getElementById('prog-fill').style.width=Math.round(i/total*100)+'%';
+    document.getElementById('prog-label').textContent=`${i+1}/${total} · ${files[i].name}`;
+    try{
+      const dataURL=dataURLs?dataURLs[i]:await readFile(files[i]);
+      const img=await loadImg(dataURL);
+      const cv=document.getElementById('cv2');cv.width=img.width;cv.height=img.height;
+      const ctx=cv.getContext('2d');ctx.drawImage(img,0,0);
+      await drawStamp(ctx,img.width,img.height,'','logo');
+      const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.93));
+      if(blob) zip.file(files[i].name.replace(/\.[^.]+$/,'')+'_logo.jpg',blob);
+    }catch(e){console.error(e);}
+  }
+  document.getElementById('prog-fill').style.width='100%';
+  document.getElementById('prog-label').textContent=`Đang tạo ZIP...`;
+  const zblob=await zip.generateAsync({type:'blob'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(zblob);a.download='logo_'+total+'_anh.zip';a.click();
+  status(`✅ Đã tải ZIP ${total} ảnh đóng logo`);
+  btn.disabled=false;btn.textContent=`🏷️ Đóng logo ${total} ảnh`;
+}
 
 async function doSingle(){
   const btn=document.getElementById('btn-go');
@@ -2641,7 +2772,7 @@ document.getElementById('lb').addEventListener('click',e=>{if(e.target===documen
 // ══════════════════════════════════════════════════════════════════
 // LOGO
 // ══════════════════════════════════════════════════════════════════
-async function uploadLogo(f){if(!f)return;logoDataURL=await readFile(f);localStorage.setItem('logo',logoDataURL);showLogo(logoDataURL);status('✅ Đã cập nhật logo');}
+async function uploadLogo(f){if(!f)return;logoDataURL=await readFile(f);localStorage.setItem('logo',logoDataURL);showLogo(logoDataURL);renderStampPreview();status('✅ Đã cập nhật logo');}
 function showLogo(src){
   document.getElementById('logo-img').src=src;document.getElementById('logo-img').style.display='block';
   document.getElementById('logo-ph').style.display='none';document.getElementById('btn-rm-logo').style.display='inline-flex';
@@ -2652,7 +2783,63 @@ function removeLogo(){
   document.getElementById('logo-img').style.display='none';document.getElementById('logo-ph').style.display='block';
   document.getElementById('btn-rm-logo').style.display='none';
   document.getElementById('hdr-logo').innerHTML='<span style="font-size:1.2rem">🖼️</span>';
+  renderStampPreview();
   status('Logo đã được xoá');
+}
+
+/* Stamp mode control */
+function setStampMode(m){
+  stampMode=m;
+  localStorage.setItem('stampMode',m);
+  document.getElementById('sm-code').className='btn '+(m==='code'?'btn-primary':'btn-ghost');
+  document.getElementById('sm-logo').className='btn '+(m==='logo'?'btn-primary':'btn-ghost');
+  // Hide theme + room selector in logo-only mode
+  document.getElementById('card-theme').style.display=m==='logo'?'none':'block';
+  document.getElementById('card-room-select').style.display=(m==='logo'||workflow==='mockup')?'none':'block';
+  document.getElementById('card-frame-color').style.display=m==='logo'?'none':'block';
+  document.getElementById('stamp-mode-hint').textContent=
+    m==='code'?'Ảnh được gắn mã SKU + logo vào tem':'Ảnh chỉ được đóng logo (không tạo mã, không lưu catalog)';
+  checkReady();
+  renderStampPreview();
+}
+
+/* Logo size & position controls */
+function setLogoSize(v){
+  logoSize=parseInt(v)/100;
+  document.getElementById('v-logo-size').textContent=v+'%';
+  localStorage.setItem('logoSize',v);
+  renderStampPreview();
+}
+function setLogoPos(pos){
+  logoPos=pos;
+  localStorage.setItem('logoPos',pos);
+  document.querySelectorAll('#logo-pos-grid button').forEach(b=>{
+    b.className='btn '+(b.id==='pos-'+pos?'btn-primary':'btn-ghost');
+  });
+  renderStampPreview();
+}
+async function renderStampPreview(){
+  const cv=document.getElementById('stamp-preview-cv');if(!cv)return;
+  const W=600,H=400;
+  cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d');
+  const grad=ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0,'#3a2a1a');grad.addColorStop(1,'#1a2a3a');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(255,255,255,.06)';
+  ctx.font='80px serif';ctx.fillText('🖼️',W/2-40,H/2+20);
+  await drawStamp(ctx,W,H,'TT00001',stampMode);
+  document.getElementById('stamp-preview-box').style.display='block';
+}
+function loadLogoSettings(){
+  const s=localStorage.getItem('logoSize');
+  if(s){logoSize=parseInt(s)/100;const el=document.getElementById('s-logo-size');if(el)el.value=s;const vl=document.getElementById('v-logo-size');if(vl)vl.textContent=s+'%';}
+  const p=localStorage.getItem('logoPos');
+  if(p){logoPos=p;}
+  // Highlight active position button
+  document.querySelectorAll('#logo-pos-grid button').forEach(b=>{
+    b.className='btn '+(b.id==='pos-'+logoPos?'btn-primary':'btn-ghost');
+  });
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -2715,6 +2902,10 @@ async function clearAll(){
   // Restore logo
   const savedLogo=localStorage.getItem('logo');
   if(savedLogo){logoDataURL=savedLogo;showLogo(savedLogo);}
+  loadLogoSettings();
+  const savedStampMode=localStorage.getItem('stampMode');
+  if(savedStampMode) setStampMode(savedStampMode); else setStampMode('code');
+  renderStampPreview();
 
   // Restore Replicate key
   replicateKey=localStorage.getItem('replicate_key')||'';
