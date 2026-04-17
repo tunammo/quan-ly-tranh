@@ -313,27 +313,12 @@ canvas{display:none}
     <div class="theme-grid" id="theme-grid"></div>
   </div>
 
-  <!-- Mockup template upload (only for filein workflow) -->
-  <div class="card" id="card-mockup-tpl" style="display:block">
-    <div class="card-title">Chọn ảnh mockup phòng</div>
-    <div style="font-size:.78rem;color:var(--text2);margin-bottom:10px">Upload ảnh phòng của bạn, sau đó kéo chuột chọn vùng đặt tranh</div>
-    <div class="drop" id="dz-mockup-tpl" ondragover="dzo(event,'dz-mockup-tpl')" ondragleave="dzl('dz-mockup-tpl')" ondrop="dzDropMockupTpl(event)">
-      <input type="file" accept="image/*" onchange="pickMockupTpl(this.files[0])" onclick="this.value=''">
-      <span class="drop-icon">🏠</span>
-      <div>Upload ảnh phòng mockup</div>
-      <div class="drop-hint">JPG · PNG · WEBP</div>
-    </div>
-    <!-- Mockup template preview with frame selector -->
-    <div id="mockup-tpl-preview" style="display:none;margin-top:12px;position:relative">
-      <div style="font-size:.75rem;color:var(--text2);margin-bottom:6px">Kéo chuột trên ảnh để chọn vùng đặt tranh:</div>
-      <div id="mockup-tpl-wrap" style="position:relative;display:inline-block;cursor:crosshair;border:1px solid var(--border);border-radius:8px;overflow:hidden">
-        <img id="mockup-tpl-img" style="display:block;max-width:100%;max-height:400px">
-        <div id="mockup-frame-rect" style="display:none;position:absolute;border:2px dashed var(--gold);background:rgba(200,146,58,.15);pointer-events:none"></div>
-      </div>
-      <div id="mockup-frame-info" style="font-size:.72rem;color:var(--text3);margin-top:4px"></div>
-    </div>
-    <!-- Saved mockup templates -->
-    <div id="saved-mockup-tpls" style="margin-top:12px"></div>
+  <!-- Room type selector (mockup from library) -->
+  <div class="card" id="card-room-select" style="display:block">
+    <div class="card-title">Chọn loại phòng</div>
+    <div style="font-size:.78rem;color:var(--text2);margin-bottom:10px">Hệ thống sẽ chọn ngẫu nhiên mockup từ thư viện. Quản lý thư viện ở <strong>Cài đặt</strong>.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap" id="room-type-grid"></div>
+    <div id="room-status" style="font-size:.75rem;color:var(--text3);margin-top:10px"></div>
   </div>
 
   <!-- Frame color selector (Khung 521) -->
@@ -856,6 +841,36 @@ canvas{display:none}
     </div>
   </div>
 
+  <!-- Mockup Library Manager -->
+  <div class="card">
+    <div class="card-title">Thư viện Mockup phòng</div>
+    <div style="font-size:.78rem;color:var(--text2);margin-bottom:12px">Upload ảnh phòng 1 lần tại đây. Khi đóng mã, hệ thống sẽ chọn ngẫu nhiên mockup từ loại phòng bạn chọn.</div>
+    <!-- Room type tabs -->
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px" id="ml-room-tabs"></div>
+    <!-- Upload zone for selected room -->
+    <div class="drop" id="dz-mockup-lib" ondragover="dzo(event,'dz-mockup-lib')" ondragleave="dzl('dz-mockup-lib')" ondrop="dzDropMockupLib(event)">
+      <input type="file" accept="image/*" multiple onchange="pickMockupLib(this.files)" onclick="this.value=''">
+      <span class="drop-icon">🏠</span>
+      <div>Upload ảnh mockup phòng</div>
+      <div class="drop-hint">JPG · PNG · WEBP — Chọn nhiều ảnh cùng lúc</div>
+    </div>
+    <!-- Mockup list for selected room -->
+    <div id="ml-list" style="margin-top:14px"></div>
+    <!-- Frame setup for individual mockup -->
+    <div id="ml-frame-setup" style="display:none;margin-top:14px;padding:14px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px">
+      <div style="font-size:.78rem;color:var(--gold);font-weight:700;margin-bottom:8px">Chọn vùng đặt tranh (kéo chuột):</div>
+      <div id="ml-frame-wrap" style="position:relative;display:inline-block;cursor:crosshair;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <img id="ml-frame-img" style="display:block;max-width:100%;max-height:350px">
+        <div id="ml-frame-rect" style="display:none;position:absolute;border:2px dashed var(--gold);background:rgba(200,146,58,.15);pointer-events:none"></div>
+      </div>
+      <div id="ml-frame-info" style="font-size:.72rem;color:var(--text3);margin-top:4px"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveMockupFrameArea()">✅ Lưu vùng đặt tranh</button>
+        <button class="btn btn-ghost" onclick="closeMockupFrameSetup()">Huỷ</button>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-title">Xoá dữ liệu</div>
     <button class="btn btn-danger" onclick="clearAll()">🗑️ Xoá toàn bộ catalog (offline)</button>
@@ -964,10 +979,23 @@ function setFrameColor(key){
   mockupDataURL=null;
 }
 
-// Mockup template state (user-uploaded)
-let mockupTplURL=null; // uploaded mockup template image dataURL
+// Room types for mockup library
+const ROOM_TYPES=[
+  {key:'phongkhach', name:'Phòng khách', emoji:'🛋️'},
+  {key:'phongngu',   name:'Phòng ngủ',   emoji:'🛏️'},
+  {key:'phongbep',   name:'Phòng bếp',   emoji:'🍳'},
+  {key:'cauthanh',   name:'Cầu thang',   emoji:'🪜'},
+];
+let selRoom='phongkhach'; // selected room type key
+// mockupLib: { phongkhach:[{id,dataURL,frame:{x,y,w,h}}], phongngu:[...], ... }
+let mockupLib={phongkhach:[],phongngu:[],phongbep:[],cauthanh:[]};
+
+function saveMockupLib(){try{localStorage.setItem('avdecor_mockupLib',JSON.stringify(mockupLib));}catch(e){console.warn('mockupLib save err:',e);}}
+function loadMockupLib(){try{const s=localStorage.getItem('avdecor_mockupLib');if(s){mockupLib=JSON.parse(s);}}catch(e){}}
+
+// Mockup template state (derived from library)
+let mockupTplURL=null; // current mockup template dataURL (picked from library)
 let mockupFrame=null; // {x,y,w,h} as fractions 0-1 of the image
-let savedMockupTpls=[]; // saved templates [{name, dataURL, frame:{x,y,w,h}}]
 
 // Google Drive state
 let storageMode='offline'; // 'offline' | 'drive' | 'both'
@@ -1582,17 +1610,18 @@ function setMode(m){
   document.getElementById('mode-batch-btn').className='btn '+(m==='batch'?'btn-primary':'btn-ghost');
   checkReady();
 }
+function hasRoomMockups(){return (mockupLib[selRoom]||[]).some(m=>m.frame);}
 function checkReady(){
   let ok=false;
+  const hasMock=hasRoomMockups();
   if(mode==='set'){
-    // Set mode: need theme + mockup frame + files (or just files for mockup workflow)
     if(workflow==='filein'){
-      ok=selTheme && mockupTplURL && mockupFrame && setDataURLs.length>=2;
+      ok=selTheme && hasMock && setDataURLs.length>=2;
     }else{
       ok=selTheme && setDataURLs.length>=2;
     }
   }else if(workflow==='filein'){
-    ok=selTheme && mockupTplURL && mockupFrame && (mode==='single'?!!sDataURL:bFiles.length>0);
+    ok=selTheme && hasMock && (mode==='single'?!!sDataURL:bFiles.length>0);
   }else{
     ok=selTheme && (mode==='single'?!!sDataURL:bFiles.length>0);
   }
@@ -1655,7 +1684,7 @@ function setWorkflow(wf){
   workflow=wf;
   document.getElementById('wf-filein').classList.toggle('sel',wf==='filein');
   document.getElementById('wf-mockup').classList.toggle('sel',wf==='mockup');
-  document.getElementById('card-mockup-tpl').style.display=wf==='filein'?'block':'none';
+  document.getElementById('card-room-select').style.display=wf==='filein'?'block':'none';
   document.getElementById('upload-card-title').textContent=wf==='filein'?'Chọn ảnh gốc (file in)':'Chọn ảnh mockup';
   document.getElementById('mockup-prev').style.display='none';
   mockupDataURL=null;
@@ -1664,130 +1693,188 @@ function setWorkflow(wf){
 
 
 // ══════════════════════════════════════════════════════════════════
-// MOCKUP TEMPLATE
+// ROOM SELECTOR (Đóng mã page)
 // ══════════════════════════════════════════════════════════════════
-function dzDropMockupTpl(e){e.preventDefault();dzl('dz-mockup-tpl');pickMockupTpl(e.dataTransfer.files[0]);}
-
-async function pickMockupTpl(f){
-  if(!f) return;
-  mockupTplURL=await readFile(f);
-  mockupFrame=null;
-  const img=document.getElementById('mockup-tpl-img');
-  img.src=mockupTplURL;
-  document.getElementById('mockup-tpl-preview').style.display='block';
-  document.getElementById('mockup-frame-rect').style.display='none';
-  document.getElementById('mockup-prev').style.display='none';
+function renderRoomGrid(){
+  const g=document.getElementById('room-type-grid');if(!g)return;
+  g.innerHTML='';
+  ROOM_TYPES.forEach(rt=>{
+    const cnt=(mockupLib[rt.key]||[]).filter(m=>m.frame).length;
+    const d=document.createElement('button');
+    d.className='theme-btn'+(selRoom===rt.key?' sel':'');
+    d.style.minWidth='110px';
+    d.innerHTML=`<span class="em">${rt.emoji}</span><span class="nm">${rt.name}</span><span class="cd">${cnt} ảnh</span>`;
+    d.onclick=()=>pickRoom(rt.key);
+    g.appendChild(d);
+  });
+  updateRoomStatus();
+}
+function pickRoom(key){
+  selRoom=key;
   mockupDataURL=null;
-  // Wait for image to load, then set default frame (50% width, centered, upper-third)
-  img.onload=()=>{
-    applyDefaultFrame();
-    initFrameSelector();
-    checkReady();
-  };
+  renderRoomGrid();
+  checkReady();
+}
+function updateRoomStatus(){
+  const el=document.getElementById('room-status');if(!el)return;
+  const list=mockupLib[selRoom]||[];
+  const ready=list.filter(m=>m.frame);
+  if(!ready.length) el.innerHTML='<span style="color:#ff7070">⚠️ Chưa có mockup — vào <strong>Cài đặt → Thư viện Mockup</strong> để upload</span>';
+  else el.textContent=`✅ ${ready.length} mockup sẵn sàng — hệ thống chọn ngẫu nhiên khi đóng mã`;
+}
+/* Pick random mockup from library for the selected room */
+function pickRandomMockup(roomKey){
+  const list=(mockupLib[roomKey||selRoom]||[]).filter(m=>m.frame);
+  if(!list.length) return null;
+  const m=list[Math.floor(Math.random()*list.length)];
+  return m; // {id, dataURL, frame:{x,y,w,h}}
 }
 
-/* Default frame: 50% mockup width, centered, top ~25% — matches "tranh = 1/2 mockup = 2/3 sofa" rule */
-function applyDefaultFrame(){
-  const wrap=document.getElementById('mockup-tpl-wrap');
-  const rect=document.getElementById('mockup-frame-rect');
+// ══════════════════════════════════════════════════════════════════
+// MOCKUP LIBRARY MANAGER (Settings page)
+// ══════════════════════════════════════════════════════════════════
+let mlRoom='phongkhach'; // currently editing room in settings
+let mlEditIdx=-1; // index of mockup being frame-edited
+let mlTempFrame=null; // temporary frame during editing
+
+function renderMLTabs(){
+  const g=document.getElementById('ml-room-tabs');if(!g)return;
+  g.innerHTML='';
+  ROOM_TYPES.forEach(rt=>{
+    const cnt=(mockupLib[rt.key]||[]).length;
+    const b=document.createElement('button');
+    b.className='btn '+(mlRoom===rt.key?'btn-primary':'btn-ghost');
+    b.style.fontSize='.8rem';
+    b.textContent=`${rt.emoji} ${rt.name} (${cnt})`;
+    b.onclick=()=>{mlRoom=rt.key;renderMLTabs();renderMLList();};
+    g.appendChild(b);
+  });
+}
+function dzDropMockupLib(e){e.preventDefault();dzl('dz-mockup-lib');pickMockupLib(e.dataTransfer.files);}
+async function pickMockupLib(files){
+  if(!files||!files.length) return;
+  const arr=Array.from(files);
+  for(const f of arr){
+    const dataURL=await readFile(f);
+    if(!mockupLib[mlRoom]) mockupLib[mlRoom]=[];
+    // Default frame: 50% width centered, 22% from top (tranh=1/2 mockup rule)
+    const defaultFrame={x:0.25, y:0.22, w:0.50, h:0.35};
+    mockupLib[mlRoom].push({id:Date.now()+'_'+Math.random().toString(36).slice(2,6), dataURL, frame:defaultFrame, name:f.name});
+  }
+  saveMockupLib();
+  renderMLList();
+  renderRoomGrid(); // update count on Đóng mã page
+}
+function renderMLList(){
+  const el=document.getElementById('ml-list');if(!el)return;
+  const list=mockupLib[mlRoom]||[];
+  if(!list.length){el.innerHTML='<div style="font-size:.8rem;color:var(--text3);padding:10px">Chưa có mockup nào. Upload ảnh phòng bên trên.</div>';return;}
+  let html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">';
+  list.forEach((m,i)=>{
+    const hasFrame=!!m.frame;
+    html+=`<div style="position:relative;border:1px solid ${hasFrame?'var(--green)':'#5a1818'};border-radius:8px;overflow:hidden;background:var(--bg3)">
+      <img src="${m.dataURL}" style="width:100%;height:110px;object-fit:cover;display:block;cursor:pointer" onclick="openMockupFrameSetup(${i})" title="Click để chỉnh vùng đặt tranh">
+      <div style="padding:6px;font-size:.7rem;display:flex;justify-content:space-between;align-items:center">
+        <span style="color:${hasFrame?'var(--green2)':'#ff7070'}">${hasFrame?'✅ Đã set vùng':'⚠️ Chưa set'}</span>
+        <button style="background:none;border:none;color:#ff7070;cursor:pointer;font-size:.85rem" onclick="delMockupLib(${i})" title="Xoá">✕</button>
+      </div>
+    </div>`;
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+function delMockupLib(idx){
+  const list=mockupLib[mlRoom]||[];
+  list.splice(idx,1);
+  saveMockupLib();
+  renderMLList();
+  renderRoomGrid();
+}
+function openMockupFrameSetup(idx){
+  mlEditIdx=idx;
+  const m=(mockupLib[mlRoom]||[])[idx];if(!m)return;
+  mlTempFrame=m.frame?{...m.frame}:null;
+  const img=document.getElementById('ml-frame-img');
+  img.src=m.dataURL;
+  document.getElementById('ml-frame-setup').style.display='block';
+  img.onload=()=>{
+    applyMLDefaultFrame(m.frame);
+    initMLFrameSelector();
+  };
+}
+function closeMockupFrameSetup(){
+  document.getElementById('ml-frame-setup').style.display='none';
+  mlEditIdx=-1;mlTempFrame=null;
+}
+function saveMockupFrameArea(){
+  if(mlEditIdx<0||!mlTempFrame) return;
+  const list=mockupLib[mlRoom]||[];
+  if(list[mlEditIdx]){
+    list[mlEditIdx].frame=mlTempFrame;
+    saveMockupLib();
+    renderMLList();
+    renderRoomGrid();
+  }
+  closeMockupFrameSetup();
+}
+function applyMLDefaultFrame(frame){
+  const wrap=document.getElementById('ml-frame-wrap');
+  const rect=document.getElementById('ml-frame-rect');
   if(!wrap||!rect) return;
   const wrapR=wrap.getBoundingClientRect();
   const wW=wrapR.width, wH=wrapR.height;
   if(wW<10||wH<10) return;
-  // Frame: 50% width, ~33% height, centered horizontally, 25% from top
-  const fw=0.50, fh=0.35, fx=0.25, fy=0.22;
-  mockupFrame={x:fx, y:fy, w:fw, h:fh};
-  // Show rectangle
-  rect.style.left=Math.round(fx*wW)+'px';
-  rect.style.top=Math.round(fy*wH)+'px';
-  rect.style.width=Math.round(fw*wW)+'px';
-  rect.style.height=Math.round(fh*wH)+'px';
+  const f=frame||{x:0.25,y:0.22,w:0.50,h:0.35};
+  mlTempFrame={...f};
+  rect.style.left=Math.round(f.x*wW)+'px';
+  rect.style.top=Math.round(f.y*wH)+'px';
+  rect.style.width=Math.round(f.w*wW)+'px';
+  rect.style.height=Math.round(f.h*wH)+'px';
   rect.style.display='block';
-  document.getElementById('mockup-frame-info').textContent=
-    'Mặc định: tranh chiếm 50% mockup (kéo chuột để thay đổi)';
-  // Auto preview if painting loaded
-  if(sDataURL && workflow==='filein') generateMockupPreview();
-  if(mode==='set' && setDataURLs.length>=2 && workflow==='filein') generateSetMockupPreview();
+  document.getElementById('ml-frame-info').textContent=
+    'Vùng: '+Math.round(f.w*100)+'% × '+Math.round(f.h*100)+'% (kéo chuột để thay đổi)';
 }
-
-function initFrameSelector(){
-  const wrap=document.getElementById('mockup-tpl-wrap');
-  const rect=document.getElementById('mockup-frame-rect');
-  const img=document.getElementById('mockup-tpl-img');
+function initMLFrameSelector(){
+  const wrap=document.getElementById('ml-frame-wrap');
+  const rect=document.getElementById('ml-frame-rect');
   let dragging=false, sx=0, sy=0;
-
-  // Remove old listeners by cloning
-  const newWrap=wrap.cloneNode(true);
-  wrap.parentNode.replaceChild(newWrap, wrap);
-  const newRect=newWrap.querySelector('#mockup-frame-rect');
-  const newImg=newWrap.querySelector('#mockup-tpl-img');
-
+  // Clone to remove old listeners
+  const nw=wrap.cloneNode(true);
+  wrap.parentNode.replaceChild(nw,wrap);
+  const nr=nw.querySelector('#ml-frame-rect');
   const getPos=(e)=>{
-    const r=newWrap.getBoundingClientRect();
-    const clientX=e.touches?e.touches[0].clientX:e.clientX;
-    const clientY=e.touches?e.touches[0].clientY:e.clientY;
-    return {x:Math.max(0,Math.min(clientX-r.left,r.width)), y:Math.max(0,Math.min(clientY-r.top,r.height))};
+    const r=nw.getBoundingClientRect();
+    const cx=e.touches?e.touches[0].clientX:e.clientX;
+    const cy=e.touches?e.touches[0].clientY:e.clientY;
+    return {x:Math.max(0,Math.min(cx-r.left,r.width)), y:Math.max(0,Math.min(cy-r.top,r.height))};
   };
-
-  newWrap.addEventListener('mousedown',e=>{
-    e.preventDefault();
-    dragging=true;
-    const p=getPos(e);
-    sx=p.x;sy=p.y;
-    newRect.style.left=sx+'px';newRect.style.top=sy+'px';
-    newRect.style.width='0';newRect.style.height='0';
-    newRect.style.display='block';
-  });
-  newWrap.addEventListener('touchstart',e=>{
-    dragging=true;
-    const p=getPos(e);
-    sx=p.x;sy=p.y;
-    newRect.style.left=sx+'px';newRect.style.top=sy+'px';
-    newRect.style.width='0';newRect.style.height='0';
-    newRect.style.display='block';
-  },{passive:true});
-
-  const onMove=(e)=>{
-    if(!dragging) return;
-    const p=getPos(e);
-    const x=Math.min(sx,p.x), y=Math.min(sy,p.y);
-    const w=Math.abs(p.x-sx), h=Math.abs(p.y-sy);
-    newRect.style.left=x+'px';newRect.style.top=y+'px';
-    newRect.style.width=w+'px';newRect.style.height=h+'px';
-  };
-  newWrap.addEventListener('mousemove',onMove);
-  newWrap.addEventListener('touchmove',onMove,{passive:true});
-
+  nw.addEventListener('mousedown',e=>{e.preventDefault();dragging=true;const p=getPos(e);sx=p.x;sy=p.y;nr.style.left=sx+'px';nr.style.top=sy+'px';nr.style.width='0';nr.style.height='0';nr.style.display='block';});
+  nw.addEventListener('touchstart',e=>{dragging=true;const p=getPos(e);sx=p.x;sy=p.y;nr.style.left=sx+'px';nr.style.top=sy+'px';nr.style.width='0';nr.style.height='0';nr.style.display='block';},{passive:true});
+  const onMove=(e)=>{if(!dragging)return;const p=getPos(e);const x=Math.min(sx,p.x),y=Math.min(sy,p.y);nr.style.left=x+'px';nr.style.top=y+'px';nr.style.width=Math.abs(p.x-sx)+'px';nr.style.height=Math.abs(p.y-sy)+'px';};
+  nw.addEventListener('mousemove',onMove);
+  nw.addEventListener('touchmove',onMove,{passive:true});
   const onEnd=()=>{
-    if(!dragging) return;
-    dragging=false;
-    const r=newWrap.getBoundingClientRect();
-    const imgW=r.width, imgH=r.height;
-    const left=parseFloat(newRect.style.left);
-    const top=parseFloat(newRect.style.top);
-    const w=parseFloat(newRect.style.width);
-    const h=parseFloat(newRect.style.height);
-    if(w<10||h<10){
-      mockupFrame=null;
-      document.getElementById('mockup-frame-info').textContent='Vùng quá nhỏ — kéo lại';
-      checkReady();
-      return;
-    }
-    // Save as fractions
-    mockupFrame={x:left/imgW, y:top/imgH, w:w/imgW, h:h/imgH};
-    document.getElementById('mockup-frame-info').textContent=
-      'Vùng đặt tranh: '+Math.round(w)+'×'+Math.round(h)+'px ('+Math.round(mockupFrame.w*100)+'% × '+Math.round(mockupFrame.h*100)+'%)';
-    // Auto-generate mockup preview if painting is loaded
-    if(sDataURL && workflow==='filein') generateMockupPreview();
-    if(mode==='set' && setDataURLs.length>=2 && workflow==='filein') generateSetMockupPreview();
-    checkReady();
+    if(!dragging)return;dragging=false;
+    const r=nw.getBoundingClientRect();
+    const imgW=r.width,imgH=r.height;
+    const l=parseFloat(nr.style.left),t=parseFloat(nr.style.top),w=parseFloat(nr.style.width),h=parseFloat(nr.style.height);
+    if(w<10||h<10){mlTempFrame=null;document.getElementById('ml-frame-info').textContent='Vùng quá nhỏ — kéo lại';return;}
+    mlTempFrame={x:l/imgW,y:t/imgH,w:w/imgW,h:h/imgH};
+    document.getElementById('ml-frame-info').textContent='Vùng: '+Math.round(mlTempFrame.w*100)+'% × '+Math.round(mlTempFrame.h*100)+'%';
   };
   window.addEventListener('mouseup',onEnd);
   window.addEventListener('touchend',onEnd);
 }
 
+// ══════════════════════════════════════════════════════════════════
+// MOCKUP GENERATION (from library)
+// ══════════════════════════════════════════════════════════════════
 async function generateMockupPreview(){
-  if(!sDataURL || !mockupTplURL || !mockupFrame) return;
+  if(!sDataURL) return;
+  // Pick random mockup from selected room
+  const m=pickRandomMockup();
+  if(!m) return;
+  mockupTplURL=m.dataURL; mockupFrame=m.frame;
   try{
     mockupDataURL=await createMockupFromTemplate([sDataURL], mockupTplURL, [mockupFrame]);
     document.getElementById('mockup-prev-img').src=mockupDataURL;
@@ -1800,21 +1887,18 @@ async function generateMockupPreview(){
 }
 
 async function generateSetMockupPreview(){
-  if(!setDataURLs.length || !mockupTplURL || !mockupFrame) return;
+  if(!setDataURLs.length) return;
+  const m=pickRandomMockup();
+  if(!m) return;
+  mockupTplURL=m.dataURL; mockupFrame=m.frame;
   try{
-    // For sets, place all paintings in the same frame area side by side
     const frames=[];
     const count=setDataURLs.length;
-    const gap=0.02; // 2% gap between paintings
+    const gap=0.02;
     const totalGap=gap*(count-1);
     const eachW=(mockupFrame.w-totalGap)/count;
     for(let i=0;i<count;i++){
-      frames.push({
-        x:mockupFrame.x+i*(eachW+gap),
-        y:mockupFrame.y,
-        w:eachW,
-        h:mockupFrame.h
-      });
+      frames.push({x:mockupFrame.x+i*(eachW+gap), y:mockupFrame.y, w:eachW, h:mockupFrame.h});
     }
     mockupDataURL=await createMockupFromTemplate(setDataURLs, mockupTplURL, frames);
     document.getElementById('set-mockup-prev-img').src=mockupDataURL;
@@ -1920,7 +2004,7 @@ async function pickSingle(f){
   document.getElementById('mockup-prev').style.display='none';
 
   // If filein workflow with mockup template selected, generate mockup preview
-  if(workflow==='filein' && mockupTplURL && mockupFrame) generateMockupPreview();
+  if(workflow==='filein' && hasRoomMockups()) generateMockupPreview();
   checkReady();
 }
 
@@ -1980,23 +2064,20 @@ async function doSet(){
 
     pf.style.width='55%';pl.textContent='Đang tạo mockup bộ tranh...';
     let mockupBlob=null;
-    if(workflow==='filein' && mockupTplURL && mockupFrame){
-      // For sets, place all paintings in the same frame area side by side
-      const frames=[];
-      const gap=0.02; // 2% gap between paintings
-      const totalGap=gap*(count-1);
-      const eachW=(mockupFrame.w-totalGap)/count;
-      for(let i=0;i<count;i++){
-        frames.push({
-          x:mockupFrame.x+i*(eachW+gap),
-          y:mockupFrame.y,
-          w:eachW,
-          h:mockupFrame.h
-        });
+    if(workflow==='filein' && hasRoomMockups()){
+      const rm=pickRandomMockup();
+      if(rm){
+        mockupTplURL=rm.dataURL; mockupFrame=rm.frame;
+        const frames=[];
+        const gap=0.02;
+        const totalGap=gap*(count-1);
+        const eachW=(mockupFrame.w-totalGap)/count;
+        for(let i=0;i<count;i++){
+          frames.push({x:mockupFrame.x+i*(eachW+gap), y:mockupFrame.y, w:eachW, h:mockupFrame.h});
+        }
+        if(!mockupDataURL) mockupDataURL=await createMockupFromTemplate(setDataURLs, mockupTplURL, frames);
+        mockupBlob=await stampImg(mockupDataURL, code);
       }
-      if(!mockupDataURL) mockupDataURL=await createMockupFromTemplate(setDataURLs, mockupTplURL, frames);
-      // Stamp code on mockup
-      mockupBlob=await stampImg(mockupDataURL, code);
     }
 
     pf.style.width='75%';pl.textContent='Đang lưu...';
@@ -2117,9 +2198,10 @@ async function doSingle(){
       const resp=await fetch(sDataURL);
       fileInBlob=await resp.blob();
       pf.style.width='65%';pl.textContent='Đang tạo mockup...';
-      // Create mockup if not already created
-      if(!mockupDataURL && mockupTplURL && mockupFrame){
-        mockupDataURL=await createMockupFromTemplate([sDataURL], mockupTplURL, [mockupFrame]);
+      // Create mockup from room library
+      if(!mockupDataURL && hasRoomMockups()){
+        const rm=pickRandomMockup();
+        if(rm){mockupTplURL=rm.dataURL;mockupFrame=rm.frame;mockupDataURL=await createMockupFromTemplate([sDataURL], mockupTplURL, [mockupFrame]);}
       }
       if(mockupDataURL){
         // Stamp code on mockup
@@ -2234,11 +2316,12 @@ async function addMissingFile(){
       blob=await resp.blob();
     }else{
       // Create mockup from the original
-      if(workflow==='filein' && mockupTplURL && mockupFrame){
+      if(workflow==='filein' && hasRoomMockups()){
         if(!mockupDataURL){
-          mockupDataURL=await createMockupFromTemplate([sDataURL], mockupTplURL, [mockupFrame]);
+          const rm=pickRandomMockup();
+          if(rm){mockupTplURL=rm.dataURL;mockupFrame=rm.frame;mockupDataURL=await createMockupFromTemplate([sDataURL], mockupTplURL, [mockupFrame]);}
         }
-        blob=await stampImg(mockupDataURL, code);
+        blob=mockupDataURL?await stampImg(mockupDataURL, code):await stampImg(sDataURL,code);
       }else{
         blob=await stampImg(sDataURL, code);
       }
@@ -2318,15 +2401,18 @@ async function doBatch(){
       }
       const code=await nextCode(th.code);
       let blob;
-      if(workflow==='filein' && mockupTplURL && mockupFrame){
+      if(workflow==='filein' && hasRoomMockups()){
         // File in: save original WITHOUT stamp (just rename)
         const resp2=await fetch(dataURL);
         blob=await resp2.blob();
-        // Create + stamp mockup
+        // Create + stamp mockup with random room mockup
         try{
-          const mURL=await createMockupFromTemplate([dataURL], mockupTplURL, [mockupFrame]);
-          const mBlob=await stampImg(mURL, code);
-          bBlobs[code+'_mockup']=mBlob;
+          const rm=pickRandomMockup();
+          if(rm){
+            const mURL=await createMockupFromTemplate([dataURL], rm.dataURL, [rm.frame]);
+            const mBlob=await stampImg(mURL, code);
+            bBlobs[code+'_mockup']=mBlob;
+          }
         }catch(e){console.error('Batch mockup error:',e);}
       }else{
         // Mockup workflow: stamp code on mockup
@@ -2672,7 +2758,11 @@ async function clearAll(){
     grid.appendChild(btn);
   });
 
+  loadMockupLib();
   renderFrameGrid();
+  renderRoomGrid();
+  renderMLTabs();
+  renderMLList();
   setMode('single');
   setShMode('single');
   await refreshCount();
