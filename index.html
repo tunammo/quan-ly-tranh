@@ -98,6 +98,13 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .badge-ok{background:rgba(60,180,60,.12);color:#6de06d;border:1px solid #2a7a2a}
 .badge-dup{background:rgba(200,160,40,.12);color:var(--gold2);border:1px solid #7a6010}
 .badge-near{background:rgba(200,100,30,.12);color:#ffaa50;border:1px solid #7a4010}
+
+/* ── FRAME COLOR BUTTONS ── */
+.frame-swatch{width:44px;height:44px;border-radius:50%;cursor:pointer;border:2.5px solid var(--border2);transition:.15s;position:relative;display:flex;align-items:center;justify-content:center}
+.frame-swatch:hover{border-color:var(--gold);transform:scale(1.1)}
+.frame-swatch.sel{border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,146,58,.35)}
+.frame-swatch .fs-label{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:.65rem;color:var(--text3);white-space:nowrap;font-weight:600}
+.frame-swatch.sel .fs-label{color:var(--gold)}
 .badge-err{background:rgba(200,50,50,.12);color:#ff7070;border:1px solid #7a1a1a}
 .badge-wait{background:rgba(100,120,200,.1);color:#90aaee;border:1px solid #2a3a7a}
 
@@ -327,6 +334,13 @@ canvas{display:none}
     </div>
     <!-- Saved mockup templates -->
     <div id="saved-mockup-tpls" style="margin-top:12px"></div>
+  </div>
+
+  <!-- Frame color selector (Khung 521) -->
+  <div class="card" id="card-frame-color">
+    <div class="card-title">Màu khung (Khung 521)</div>
+    <div style="font-size:.75rem;color:var(--text2);margin-bottom:10px">Composite 9mm viền · 34mm sâu · Chống cong vênh</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap" id="frame-color-grid"></div>
   </div>
 
   <!-- Upload -->
@@ -920,6 +934,35 @@ let mockupDataURL=null; // generated mockup data URL
 let panelMode='single'; // 'single' | 'set'
 let setFiles=[]; // files for multi-panel set
 let setDataURLs=[]; // dataURLs for multi-panel set
+
+// Khung 521 — frame colors
+const FRAME_COLORS=[
+  {key:'den',  name:'Đen',   outer:'#1a1a1a', inner:'#2d2d2d', edge:'#3a3a3a', shadow:'rgba(0,0,0,.7)'},
+  {key:'be',   name:'Be',    outer:'#c8b898', inner:'#d8c8a8', edge:'#e0d4b8', shadow:'rgba(80,60,30,.5)'},
+  {key:'nau',  name:'Nâu',   outer:'#6a4a2a', inner:'#7a5a3a', edge:'#8a6a48', shadow:'rgba(40,20,0,.6)'},
+  {key:'vang', name:'Vàng',  outer:'#b89848', inner:'#c8a858', edge:'#d4b468', shadow:'rgba(80,60,0,.5)'},
+  {key:'trang',name:'Trắng', outer:'#e8e4de', inner:'#f0ede8', edge:'#f8f6f2', shadow:'rgba(0,0,0,.3)'},
+];
+let selFrame='den'; // selected frame color key
+
+function renderFrameGrid(){
+  const g=document.getElementById('frame-color-grid');if(!g)return;
+  g.innerHTML='';
+  FRAME_COLORS.forEach(fc=>{
+    const d=document.createElement('div');
+    d.className='frame-swatch'+(selFrame===fc.key?' sel':'');
+    d.style.background=`radial-gradient(circle at 35% 35%, ${fc.inner}, ${fc.outer})`;
+    d.innerHTML=`<span class="fs-label">${fc.name}</span>`;
+    d.onclick=()=>setFrameColor(fc.key);
+    g.appendChild(d);
+  });
+}
+function setFrameColor(key){
+  selFrame=key;
+  renderFrameGrid();
+  // Reset mockup so it gets re-generated with new frame color
+  mockupDataURL=null;
+}
 
 // Mockup template state (user-uploaded)
 let mockupTplURL=null; // uploaded mockup template image dataURL
@@ -1633,11 +1676,38 @@ async function pickMockupTpl(f){
   img.src=mockupTplURL;
   document.getElementById('mockup-tpl-preview').style.display='block';
   document.getElementById('mockup-frame-rect').style.display='none';
-  document.getElementById('mockup-frame-info').textContent='Kéo chuột để chọn vùng đặt tranh';
   document.getElementById('mockup-prev').style.display='none';
   mockupDataURL=null;
-  initFrameSelector();
-  checkReady();
+  // Wait for image to load, then set default frame (50% width, centered, upper-third)
+  img.onload=()=>{
+    applyDefaultFrame();
+    initFrameSelector();
+    checkReady();
+  };
+}
+
+/* Default frame: 50% mockup width, centered, top ~25% — matches "tranh = 1/2 mockup = 2/3 sofa" rule */
+function applyDefaultFrame(){
+  const wrap=document.getElementById('mockup-tpl-wrap');
+  const rect=document.getElementById('mockup-frame-rect');
+  if(!wrap||!rect) return;
+  const wrapR=wrap.getBoundingClientRect();
+  const wW=wrapR.width, wH=wrapR.height;
+  if(wW<10||wH<10) return;
+  // Frame: 50% width, ~33% height, centered horizontally, 25% from top
+  const fw=0.50, fh=0.35, fx=0.25, fy=0.22;
+  mockupFrame={x:fx, y:fy, w:fw, h:fh};
+  // Show rectangle
+  rect.style.left=Math.round(fx*wW)+'px';
+  rect.style.top=Math.round(fy*wH)+'px';
+  rect.style.width=Math.round(fw*wW)+'px';
+  rect.style.height=Math.round(fh*wH)+'px';
+  rect.style.display='block';
+  document.getElementById('mockup-frame-info').textContent=
+    'Mặc định: tranh chiếm 50% mockup (kéo chuột để thay đổi)';
+  // Auto preview if painting loaded
+  if(sDataURL && workflow==='filein') generateMockupPreview();
+  if(mode==='set' && setDataURLs.length>=2 && workflow==='filein') generateSetMockupPreview();
 }
 
 function initFrameSelector(){
@@ -1765,7 +1835,7 @@ async function createMockupFromTemplate(paintingURLs, templateURL, frames){
   // Draw template background
   ctx.drawImage(tplImg,0,0);
   const W=tplImg.width, H=tplImg.height;
-  // Draw each painting into its frame
+  // Draw each painting into its frame with Khung 521
   for(let i=0;i<frames.length && i<paintingURLs.length;i++){
     const f=frames[i];
     const fx=f.x*W, fy=f.y*H, fw=f.w*W, fh=f.h*H;
@@ -1776,10 +1846,60 @@ async function createMockupFromTemplate(paintingURLs, templateURL, frames){
       let dx,dy,dw,dh;
       if(imgAR>frameAR){dw=fw;dh=fw/imgAR;dx=fx;dy=fy+(fh-dh)/2;}
       else{dh=fh;dw=fh*imgAR;dy=fy;dx=fx+(fw-dw)/2;}
-      ctx.drawImage(painting,dx,dy,dw,dh);
+      // ── Draw Khung 521 frame ──
+      drawKhung521(ctx,dx,dy,dw,dh);
+      // ── Inset painting inside frame ──
+      const borderW=Math.max(3,Math.min(dw,dh)*0.035); // ~3.5% of smaller dim
+      ctx.drawImage(painting,dx+borderW,dy+borderW,dw-borderW*2,dh-borderW*2);
     }catch(e){}
   }
   return cv.toDataURL('image/jpeg',0.93);
+}
+
+/* ── Khung 521: composite frame — 9mm edge, 34mm depth ── */
+function drawKhung521(ctx,x,y,w,h){
+  const fc=FRAME_COLORS.find(c=>c.key===selFrame)||FRAME_COLORS[0];
+  const bw=Math.max(3,Math.min(w,h)*0.035); // frame border width (~3.5%)
+
+  ctx.save();
+  // Drop shadow behind frame
+  ctx.shadowColor=fc.shadow;ctx.shadowBlur=bw*2.5;ctx.shadowOffsetX=bw*0.5;ctx.shadowOffsetY=bw*0.8;
+  ctx.fillStyle=fc.outer;
+  ctx.fillRect(x-bw,y-bw,w+bw*2,h+bw*2);
+  ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+
+  // Outer frame fill
+  ctx.fillStyle=fc.outer;
+  ctx.fillRect(x-bw,y-bw,w+bw*2,h+bw*2);
+
+  // Inner lighter strip (depth illusion — inside edge)
+  const inset=bw*0.35;
+  ctx.fillStyle=fc.inner;
+  ctx.fillRect(x-bw+inset,y-bw+inset,w+bw*2-inset*2,h+bw*2-inset*2);
+
+  // Edge highlight (top-left light)
+  ctx.fillStyle=fc.edge;
+  // Top edge highlight
+  ctx.fillRect(x-bw,y-bw,w+bw*2,inset);
+  // Left edge highlight
+  ctx.fillRect(x-bw,y-bw,inset,h+bw*2);
+
+  // Inner shadow (simulates depth — bottom-right darker)
+  ctx.fillStyle='rgba(0,0,0,.18)';
+  ctx.fillRect(x-bw,y+h+bw-inset,w+bw*2,inset);
+  ctx.fillRect(x+w+bw-inset,y-bw,inset,h+bw*2);
+
+  // Thin inner border (where painting meets frame)
+  ctx.strokeStyle='rgba(0,0,0,.25)';
+  ctx.lineWidth=Math.max(0.5,bw*0.08);
+  ctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
+
+  // Thin outer border
+  ctx.strokeStyle=fc.edge;
+  ctx.lineWidth=Math.max(0.5,bw*0.1);
+  ctx.strokeRect(x-bw+0.5,y-bw+0.5,w+bw*2-1,h+bw*2-1);
+
+  ctx.restore();
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -2552,6 +2672,7 @@ async function clearAll(){
     grid.appendChild(btn);
   });
 
+  renderFrameGrid();
   setMode('single');
   setShMode('single');
   await refreshCount();
