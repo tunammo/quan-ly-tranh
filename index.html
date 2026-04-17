@@ -42,7 +42,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .card-title::before{content:'';display:block;width:3px;height:14px;background:var(--gold);border-radius:2px}
 
 /* ── THEME GRID ── */
-.theme-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}
 @media(max-width:600px){.theme-grid{grid-template-columns:repeat(3,1fr)}}
 .theme-btn{background:var(--bg3);border:1.5px solid var(--border2);border-radius:10px;padding:11px 6px 9px;cursor:pointer;text-align:center;transition:.15s;color:var(--text2)}
 .theme-btn:hover{border-color:var(--gold);color:var(--text)}
@@ -864,11 +864,41 @@ canvas{display:none}
 // CONSTANTS & STATE
 // ══════════════════════════════════════════════════════════════════
 const THEMES=[
-  {name:'Hoa',        code:'H',  emoji:'🌸', folder:'Hoa'},
-  {name:'Phong cảnh', code:'PC', emoji:'🏔️', folder:'Phong_canh'},
-  {name:'Tĩnh vật',   code:'TT', emoji:'🍎', folder:'Tinh_vat'},
-  {name:'Động vật',   code:'DV', emoji:'🦁', folder:'Dong_vat'},
-  {name:'Trừu tượng', code:'PT', emoji:'🎨', folder:'Truu_tuong'},
+  {name:'Trừu tượng',   code:'TT',  emoji:'🎨', folder:'Truu_tuong'},
+  {name:'Hiện đại',     code:'HD',  emoji:'🖼️', folder:'Hien_dai'},
+  {name:'Indochine',    code:'IC',  emoji:'🏛️', folder:'Indochine'},
+  {name:'Núi',          code:'NUI', emoji:'⛰️', folder:'Nui'},
+  {name:'Biển',         code:'BIE', emoji:'🌊', folder:'Bien'},
+  {name:'Tây Bắc',     code:'TB',  emoji:'🏔️', folder:'Tay_Bac'},
+  {name:'Hà Nội',      code:'HN',  emoji:'🏙️', folder:'Ha_Noi'},
+  {name:'Đồng quê',    code:'DQ',  emoji:'🌾', folder:'Dong_que'},
+  {name:'Hoa hồng',    code:'HH',  emoji:'🌹', folder:'Hoa_hong'},
+  {name:'Hoa thiên điểu', code:'HTD', emoji:'🌺', folder:'Hoa_thien_dieu'},
+  {name:'Hoa sen',     code:'HS',  emoji:'🪷', folder:'Hoa_sen'},
+  {name:'Hoa mẫu đơn', code:'HMD', emoji:'🌸', folder:'Hoa_mau_don'},
+  {name:'Hoa hướng dương', code:'HHD', emoji:'🌻', folder:'Hoa_huong_duong'},
+  {name:'Hoa đào',     code:'HDO', emoji:'🌸', folder:'Hoa_dao'},
+  {name:'Hoa mai',     code:'HM',  emoji:'💮', folder:'Hoa_mai'},
+  {name:'Hoa mộc lan', code:'HML', emoji:'🌼', folder:'Hoa_moc_lan'},
+  {name:'Phật',        code:'PH',  emoji:'🙏', folder:'Phat'},
+  {name:'Thiền',       code:'TH',  emoji:'🧘', folder:'Thien'},
+  {name:'Thư pháp',    code:'TP',  emoji:'✍️', folder:'Thu_phap'},
+  {name:'Hạc',         code:'HAC', emoji:'🦢', folder:'Hac'},
+  {name:'Ngựa',        code:'NG',  emoji:'🐴', folder:'Ngua'},
+  {name:'Chim công',   code:'CC',  emoji:'🦚', folder:'Chim_cong'},
+  {name:'Cá heo',      code:'CH',  emoji:'🐬', folder:'Ca_heo'},
+  {name:'Chân dung',   code:'CD',  emoji:'👤', folder:'Chan_dung'},
+  {name:'Mã đáo',      code:'MD',  emoji:'🐎', folder:'Ma_dao'},
+  {name:'Cửu ngư',     code:'CN',  emoji:'🐟', folder:'Cuu_ngu'},
+  {name:'Cá chép',     code:'CCH', emoji:'🐠', folder:'Ca_chep'},
+  {name:'Thuận buồm',  code:'TBX', emoji:'⛵', folder:'Thuan_buom'},
+  {name:'Thủy mặc',    code:'TM',  emoji:'🖌️', folder:'Thuy_mac'},
+  {name:'Tứ quý',      code:'TQ',  emoji:'🍂', folder:'Tu_quy'},
+  {name:'Tĩnh vật',    code:'TV',  emoji:'🍎', folder:'Tinh_vat'},
+  {name:'Động lực',    code:'DL',  emoji:'💪', folder:'Dong_luc'},
+  {name:'Lá cây',      code:'LC',  emoji:'🍃', folder:'La_cay'},
+  {name:'Lịch Tết',    code:'LT',  emoji:'🧧', folder:'Lich_tet'},
+  {name:'Dán tường',   code:'DT',  emoji:'🧱', folder:'Dan_tuong'},
 ];
 const DB_NAME='avdecor_v3', DB_VER=1, STORE='cat', PAGE=50;
 const DRIVE_ROOT_NAME='AV Decor Tranh';
