@@ -382,6 +382,16 @@ canvas{display:none}
         <div style="font-size:.78rem;color:var(--text2);margin-bottom:6px" id="set-info"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap" id="set-thumbs"></div>
       </div>
+      <!-- Set layout editor -->
+      <div id="set-layout-editor" style="display:none;margin-top:14px;padding:14px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px">
+        <div style="font-size:.78rem;font-weight:700;color:var(--gold);margin-bottom:10px">Bố cục tranh trong mockup</div>
+        <div style="font-size:.72rem;color:var(--text3);margin-bottom:10px">Chỉnh kích thước và vị trí từng tranh (% của vùng đặt tranh)</div>
+        <div id="set-layout-controls"></div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-ghost" onclick="resetSetLayout()" style="font-size:.78rem">↺ Chia đều</button>
+          <button class="btn btn-primary" onclick="applySetLayout()" style="font-size:.78rem">👁 Xem preview</button>
+        </div>
+      </div>
       <!-- Set mockup preview -->
       <div class="mockup-preview" id="set-mockup-prev" style="display:none">
         <span class="mockup-badge">MOCKUP BỘ TRANH</span>
@@ -448,11 +458,11 @@ canvas{display:none}
       </div>
     </div>
     <div id="batch-actions" style="display:none">
-      <div class="btn-row" style="margin-top:12px">
-        <button class="btn btn-primary" onclick="dlZip()">📦 Tải ZIP (phân thư mục)</button>
+      <div id="batch-summary" style="font-size:.8rem;color:var(--text2);margin-top:8px;margin-bottom:8px"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="dlZip()" id="btn-dl-zip">📦 Tải ZIP (phân thư mục)</button>
         <button class="btn btn-ghost" onclick="clearBatch()">🗑️ Xoá batch</button>
       </div>
-      <div id="batch-summary" style="font-size:.8rem;color:var(--text2);margin-top:8px"></div>
     </div>
   </div>
 </div>
@@ -795,6 +805,34 @@ canvas{display:none}
     </div>
   </div>
 
+  <!-- Auto-save to disk -->
+  <div class="card" id="card-autosave">
+    <div class="card-title">💾 Tự động lưu file về ổ cứng</div>
+    <div class="info-box" style="margin-bottom:14px">
+      Chọn thư mục gốc trên máy tính. File tự phân vào 2 nhánh:<br>
+      <code>📁 Gốc / Mockup / Truu_tuong / TT001.jpg</code><br>
+      <code>📁 Gốc / File_in / Truu_tuong / TT001.tif</code><br>
+      <strong>Không cần tải ZIP</strong> — file vào đúng chỗ luôn, giữ nguyên định dạng gốc.
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="pickSaveDir()" id="btn-pick-dir">📂 Chọn thư mục gốc</button>
+      <div id="save-dir-status" style="font-size:.78rem;color:var(--text2)">Chưa chọn thư mục</div>
+    </div>
+    <div id="save-dir-name" style="display:none;margin-top:10px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:1.4rem">📁</span>
+        <div style="flex:1">
+          <div style="font-size:.82rem;font-weight:700;color:var(--gold)" id="save-dir-label"></div>
+          <div style="font-size:.72rem;color:var(--text3)">File sẽ tự động phân thư mục theo chủ đề</div>
+        </div>
+        <button class="btn btn-ghost" style="padding:4px 10px;font-size:.72rem" onclick="clearSaveDir()">✕ Bỏ chọn</button>
+      </div>
+    </div>
+    <div id="no-fsa-warn" style="display:none;margin-top:10px;padding:10px;background:rgba(255,112,112,.1);border:1px solid rgba(255,112,112,.3);border-radius:8px;font-size:.78rem;color:#ff7070">
+      ⚠️ Trình duyệt không hỗ trợ <strong>File System Access API</strong>. Vui lòng dùng <strong>Chrome</strong> hoặc <strong>Edge</strong> phiên bản mới nhất.
+    </div>
+  </div>
+
   <!-- Replicate API -->
   <div class="card">
     <div class="card-title">AI Upscale — Replicate API</div>
@@ -983,6 +1021,10 @@ let logoDataURL=null;
 let logoSize=1.0;   // multiplier: 0.5–2.0 (default 1.0 = auto)
 let logoPos='bl';   // position: 'bl'=bottom-left, 'br'=bottom-right, 'tl'=top-left, 'tr'=top-right
 let stampMode='code'; // 'code' = mã + logo (mặc định), 'logo' = chỉ logo
+
+// File System Access API — save directly to disk
+let saveDirHandle=null; // FileSystemDirectoryHandle from showDirectoryPicker
+let autoSaveDisk=false; // whether to auto-save to disk after processing
 
 // Workflow state
 let workflow='filein'; // 'filein' | 'mockup'
@@ -1972,17 +2014,13 @@ async function generateSetMockupPreview(){
   if(!m) return;
   mockupTplURL=m.dataURL; mockupFrame=m.frame;
   try{
-    const frames=[];
-    const count=setDataURLs.length;
-    const gap=0.02;
-    const totalGap=gap*(count-1);
-    const eachW=(mockupFrame.w-totalGap)/count;
-    for(let i=0;i<count;i++){
-      frames.push({x:mockupFrame.x+i*(eachW+gap), y:mockupFrame.y, w:eachW, h:mockupFrame.h});
-    }
+    /* Use custom layout if available, else init equal-division */
+    if(!setCustomFrames||setCustomFrames.length!==setDataURLs.length) resetSetLayout();
+    const frames=buildSetFrames();
+    if(!frames.length) return;
     mockupDataURL=await createMockupFromTemplate(setDataURLs, mockupTplURL, frames);
     document.getElementById('set-mockup-prev-img').src=mockupDataURL;
-    document.getElementById('set-mockup-prev-label').textContent='Mockup bộ '+count+' tranh';
+    document.getElementById('set-mockup-prev-label').textContent='Mockup bộ '+setDataURLs.length+' tranh';
     document.getElementById('set-mockup-prev').style.display='block';
   }catch(e){
     console.error('Set mockup error:',e);
@@ -2132,7 +2170,69 @@ async function pickSet(files){
   document.getElementById('set-preview-list').style.display='block';
   document.getElementById('set-mockup-prev').style.display='none';
   mockupDataURL=null;
+  buildSetLayoutEditor();
   checkReady();
+}
+
+// ── Set layout: custom frame positions ──
+let setCustomFrames=null; // null = auto equal, or [{x,y,w,h},...] as fractions of mockupFrame
+
+function buildSetLayoutEditor(){
+  const n=setDataURLs.length;
+  if(n<2){document.getElementById('set-layout-editor').style.display='none';return;}
+  document.getElementById('set-layout-editor').style.display='block';
+  resetSetLayout();
+}
+function resetSetLayout(){
+  // Equal division (default)
+  const n=setDataURLs.length;
+  const gap=2; // % gap
+  const totalGap=gap*(n-1);
+  const eachW=Math.round((100-totalGap)/n);
+  setCustomFrames=[];
+  let cx=0;
+  for(let i=0;i<n;i++){
+    setCustomFrames.push({xPct:cx, yPct:0, wPct:eachW, hPct:100});
+    cx+=eachW+gap;
+  }
+  renderSetLayoutControls();
+}
+function renderSetLayoutControls(){
+  const el=document.getElementById('set-layout-controls');
+  if(!el||!setCustomFrames)return;
+  let html='';
+  setCustomFrames.forEach((f,i)=>{
+    html+=`<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;padding:8px;background:var(--bg4);border-radius:8px;border:1px solid var(--border)">
+      <img src="${setDataURLs[i]||''}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;flex-shrink:0">
+      <div style="flex:1;font-size:.72rem">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+          <span style="color:var(--text3);width:35px">Rộng</span>
+          <input type="range" min="15" max="90" value="${f.wPct}" oninput="setFrameW(${i},this.value)" style="flex:1">
+          <span style="color:var(--gold);width:30px;text-align:right" id="sf-w-${i}">${f.wPct}%</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="color:var(--text3);width:35px">Trái</span>
+          <input type="range" min="0" max="85" value="${f.xPct}" oninput="setFrameX(${i},this.value)" style="flex:1">
+          <span style="color:var(--gold);width:30px;text-align:right" id="sf-x-${i}">${f.xPct}%</span>
+        </div>
+      </div>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+function setFrameW(i,v){v=parseInt(v);setCustomFrames[i].wPct=v;document.getElementById('sf-w-'+i).textContent=v+'%';mockupDataURL=null;}
+function setFrameX(i,v){v=parseInt(v);setCustomFrames[i].xPct=v;document.getElementById('sf-x-'+i).textContent=v+'%';mockupDataURL=null;}
+function applySetLayout(){generateSetMockupPreview();}
+
+/* Convert setCustomFrames (% of mockupFrame) → absolute fractions of image */
+function buildSetFrames(){
+  if(!mockupFrame||!setCustomFrames) return [];
+  return setCustomFrames.map(f=>({
+    x: mockupFrame.x + mockupFrame.w * f.xPct/100,
+    y: mockupFrame.y + mockupFrame.h * f.yPct/100,
+    w: mockupFrame.w * f.wPct/100,
+    h: mockupFrame.h * f.hPct/100
+  }));
 }
 
 async function doSet(){
@@ -2168,15 +2268,12 @@ async function doSet(){
       const rm=pickRandomMockup();
       if(rm){
         mockupTplURL=rm.dataURL; mockupFrame=rm.frame;
-        const frames=[];
-        const gap=0.02;
-        const totalGap=gap*(count-1);
-        const eachW=(mockupFrame.w-totalGap)/count;
-        for(let i=0;i<count;i++){
-          frames.push({x:mockupFrame.x+i*(eachW+gap), y:mockupFrame.y, w:eachW, h:mockupFrame.h});
+        if(!setCustomFrames||setCustomFrames.length!==count) resetSetLayout();
+        const frames=buildSetFrames();
+        if(frames.length){
+          if(!mockupDataURL) mockupDataURL=await createMockupFromTemplate(setDataURLs, mockupTplURL, frames);
+          mockupBlob=await stampImg(mockupDataURL, code);
         }
-        if(!mockupDataURL) mockupDataURL=await createMockupFromTemplate(setDataURLs, mockupTplURL, frames);
-        mockupBlob=await stampImg(mockupDataURL, code);
       }
     }
 
@@ -2205,6 +2302,16 @@ async function doSet(){
       await storeMockupFile(entry, mockupBlob);
     }
 
+    // Auto-save to disk
+    let diskSaved=0;
+    if(autoSaveDisk){
+      pf.style.width='85%';pl.textContent='Đang lưu file về ổ cứng...';
+      for(const fi of fileInBlobs){
+        diskSaved+=await autoSaveFiles({...entry, code:fi.code}, fi.blob, null);
+      }
+      if(mockupBlob) diskSaved+=await autoSaveFiles(entry, null, mockupBlob);
+    }
+
     sCode=code;
     pf.style.width='100%';
     const displaySrc=mockupDataURL||setDataURLs[0];
@@ -2214,7 +2321,9 @@ async function doSet(){
     ftEl.textContent='Bộ '+count+' tranh: '+fileInBlobs.map(f=>f.code).join(', ')+(mockupBlob?' + Mockup':'');
     ftEl.style.display='block';
 
-    status('✅ Đã lưu bộ '+count+' tranh — mã '+code);
+    let setMsg='✅ Đã lưu bộ '+count+' tranh — mã '+code;
+    if(diskSaved) setMsg+=` · 💾 ${diskSaved} file → ổ cứng`;
+    status(setMsg);
     refreshCount();
   }catch(e){status('❌ Lỗi: '+e.message);console.error(e);}
   finally{btn.disabled=false;checkReady();setTimeout(()=>pw.style.display='none',1200);}
@@ -2285,13 +2394,16 @@ async function doLogoSingle(){
     const isPNG=sDataURL.startsWith('data:image/png');
     const fmt=isPNG?'image/png':'image/jpeg';
     const ext=isPNG?'.png':'.jpg';
-    cv.toBlob(b=>{
-      if(!b)return;
-      const a=document.createElement('a');a.href=URL.createObjectURL(b);
-      a.download=(sFile?sFile.name.replace(/\.[^.]+$/,''):'image')+'_logo'+ext;a.click();
-      status('✅ Đã tải ảnh đóng logo');
-      btn.disabled=false;btn.textContent='🏷️ Đóng logo';
-    },fmt,isPNG?undefined:0.98);
+    const blob=await new Promise(r=>cv.toBlob(r,fmt,isPNG?undefined:0.98));
+    if(!blob)return;
+    const fname=(sFile?sFile.name.replace(/\.[^.]+$/,''):'image')+'_logo'+ext;
+    if(autoSaveDisk){
+      const ok=await saveToDisk(['Logo'], fname, blob);
+      if(ok){status('✅ Đã lưu ảnh đóng logo → ổ cứng');btn.disabled=false;btn.textContent='🏷️ Đóng logo';return;}
+    }
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;a.click();
+    status('✅ Đã tải ảnh đóng logo');
+    btn.disabled=false;btn.textContent='🏷️ Đóng logo';
   }catch(e){status('❌ Lỗi: '+e.message);btn.disabled=false;btn.textContent='🏷️ Đóng logo';}
 }
 /* ── Logo-only: batch / set ── */
@@ -2301,7 +2413,9 @@ async function doLogoBatch(){
   if(!files.length||!logoDataURL)return;
   const btn=document.getElementById('btn-go');btn.disabled=true;
   document.getElementById('prog-wrap').style.display='block';
-  const zip=new JSZip();const total=files.length;
+  const useDisk=autoSaveDisk;
+  const zip=useDisk?null:new JSZip();
+  const total=files.length;let diskCount=0;
   for(let i=0;i<total;i++){
     document.getElementById('prog-fill').style.width=Math.round(i/total*100)+'%';
     document.getElementById('prog-label').textContent=`${i+1}/${total} · ${files[i].name}`;
@@ -2315,14 +2429,24 @@ async function doLogoBatch(){
       const fmt=isPNG?'image/png':'image/jpeg';
       const ext=isPNG?'.png':'.jpg';
       const blob=await new Promise(r=>cv.toBlob(r,fmt,isPNG?undefined:0.98));
-      if(blob) zip.file(files[i].name.replace(/\.[^.]+$/,'')+'_logo'+ext,blob);
+      if(!blob)continue;
+      const fname=files[i].name.replace(/\.[^.]+$/,'')+'_logo'+ext;
+      if(useDisk){
+        if(await saveToDisk(['Logo'], fname, blob)) diskCount++;
+      }else{
+        zip.file(fname,blob);
+      }
     }catch(e){console.error(e);}
   }
   document.getElementById('prog-fill').style.width='100%';
-  document.getElementById('prog-label').textContent=`Đang tạo ZIP...`;
-  const zblob=await zip.generateAsync({type:'blob'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(zblob);a.download='logo_'+total+'_anh.zip';a.click();
-  status(`✅ Đã tải ZIP ${total} ảnh đóng logo`);
+  if(useDisk){
+    status(`✅ Đã lưu ${diskCount} ảnh đóng logo → ổ cứng / Logo/`);
+  }else{
+    document.getElementById('prog-label').textContent=`Đang tạo ZIP...`;
+    const zblob=await zip.generateAsync({type:'blob'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(zblob);a.download='logo_'+total+'_anh.zip';a.click();
+    status(`✅ Đã tải ZIP ${total} ảnh đóng logo`);
+  }
   btn.disabled=false;btn.textContent=`🏷️ Đóng logo ${total} ảnh`;
 }
 
@@ -2389,6 +2513,13 @@ async function doSingle(){
       await storeMockupFile(entry2, mockupBlob);
     }
 
+    // Auto-save to disk if configured
+    let diskSaved=0;
+    if(autoSaveDisk){
+      pf.style.width='90%';pl.textContent='Đang lưu file về ổ cứng...';
+      diskSaved=await autoSaveFiles(entry2, fileInBlob, mockupBlob);
+    }
+
     sBlob=primaryBlob;sCode=code;
     pf.style.width='100%';
 
@@ -2396,7 +2527,8 @@ async function doSingle(){
     const displayBlob=mockupBlob||fileInBlob;
     const displaySrc=saved.imgData||URL.createObjectURL(displayBlob);
     showSingleResult(code,displaySrc,'ok',dist,null,warnE,fileType);
-    const savedMsg = storageMode==='drive'?`✅ Đã upload ${code} lên Drive / ${th.folder}/` : storageMode==='both'?`✅ Đã lưu ${code} (Offline + Drive)` : `✅ Đã lưu ${code}`;
+    let savedMsg = storageMode==='drive'?`✅ Đã upload ${code} lên Drive / ${th.folder}/` : storageMode==='both'?`✅ Đã lưu ${code} (Offline + Drive)` : `✅ Đã lưu ${code}`;
+    if(diskSaved) savedMsg+=` · 💾 ${diskSaved} file → ổ cứng`;
     status(savedMsg);
     refreshCount();
   }catch(e){status('❌ Lỗi: '+e.message);console.error(e);}
@@ -2583,8 +2715,17 @@ async function doBatch(){
         hash,created_at:Date.now(),file_type:workflow==='filein'?'both':'mockup'};
       await storeEntry(entry2,blob);
       bBlobs[code]=blob;
+      // Also save mockup to IndexedDB if exists
+      if(bBlobs[code+'_mockup']){
+        await storeMockupFile(entry2, bBlobs[code+'_mockup']);
+      }
+      // Auto-save to disk
+      if(autoSaveDisk){
+        await autoSaveFiles(entry2, blob, bBlobs[code+'_mockup']||null);
+      }
       bResults.push({code,status:'ok',folder:th.folder});
       let lbl=`<span class="badge badge-ok">✅</span>`;
+      if(autoSaveDisk) lbl+=` <span class="badge" style="background:rgba(109,224,109,.12);color:#6de06d;border:1px solid rgba(109,224,109,.3);font-size:.65rem">💾</span>`;
       if(storageMode==='drive') lbl+=` <span class="badge" style="background:rgba(42,90,138,.15);color:var(--blue2);border:1px solid var(--blue);font-size:.65rem">☁️</span>`;
       if(dist<=WARN&&entry) lbl+=` <span class="badge badge-near" style="font-size:.65rem">~${sim(dist)}%</span>`;
       setBRow(i,code,lbl);
@@ -2598,34 +2739,49 @@ async function doBatch(){
   const ok=bResults.filter(r=>r.status==='ok').length;
   const dup=bResults.filter(r=>r.status==='dup').length;
   const err=bResults.filter(r=>r.status==='err').length;
-  document.getElementById('batch-summary').innerHTML=
-    `<span style="color:#6de06d">✅ ${ok} mới</span> &nbsp;·&nbsp; `+
+  let summaryHtml=`<span style="color:#6de06d">✅ ${ok} mới</span> &nbsp;·&nbsp; `+
     `<span style="color:var(--gold2)">🔁 ${dup} trùng</span> &nbsp;·&nbsp; `+
-    `<span style="color:#ff7070">❌ ${err} lỗi</span>`+
-    (storageMode==='drive'?` &nbsp;·&nbsp; <span style="color:var(--blue2)">☁️ Drive</span>`:'');
+    `<span style="color:#ff7070">❌ ${err} lỗi</span>`;
+  if(autoSaveDisk) summaryHtml+=` &nbsp;·&nbsp; <span style="color:#6de06d">💾 Đã lưu ổ cứng</span>`;
+  if(storageMode==='drive') summaryHtml+=` &nbsp;·&nbsp; <span style="color:var(--blue2)">☁️ Drive</span>`;
+  document.getElementById('batch-summary').innerHTML=summaryHtml;
   document.getElementById('batch-actions').style.display='block';
-  status(`Xong: ${ok} mới · ${dup} trùng · ${err} lỗi`);
+  let statusMsg=`Xong: ${ok} mới · ${dup} trùng · ${err} lỗi`;
+  if(autoSaveDisk) statusMsg+=` · 💾 Đã lưu về ổ cứng`;
+  status(statusMsg);
   btn.disabled=false;btn.textContent=`⚡ Đóng mã ${total} ảnh`;
   refreshCount();
 }
 
 async function dlZip(){
-  const codes=Object.keys(bBlobs);
-  if(!codes.length){alert('Không có ảnh mới để tải');return;}
+  /* Separate base codes from mockup keys */
+  const allKeys=Object.keys(bBlobs);
+  const baseCodes=allKeys.filter(k=>!k.endsWith('_mockup'));
+  if(!baseCodes.length){alert('Không có ảnh mới để tải');return;}
   status('⏳ Đang tạo ZIP...');
   const zip=new JSZip();
   const all=storageMode==='drive'?catData:await dbAll();
-  for(const code of codes){
+  let fileCount=0;
+  for(const code of baseCodes){
     const entry=all.find(e=>e.code===code);
-    const folderName=entry?.folder||entry?.theme_code||'Khac';
-    zip.folder(folderName).file(code+'.jpg',bBlobs[code]);
+    const themeFolder=entry?.folder||entry?.theme_code||'Khac';
+    /* File in → File_in/<theme>/ */
+    if(bBlobs[code]){
+      zip.folder('File_in').folder(themeFolder).file(code+'.jpg',bBlobs[code]);
+      fileCount++;
+    }
+    /* Mockup → Mockup/<theme>/ */
+    if(bBlobs[code+'_mockup']){
+      zip.folder('Mockup').folder(themeFolder).file(code+'.jpg',bBlobs[code+'_mockup']);
+      fileCount++;
+    }
   }
   const blob=await zip.generateAsync({type:'blob'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download='tranh_'+new Date().toISOString().slice(0,10)+'.zip';
   a.click();
-  status('✅ Đã tải ZIP phân thư mục: '+codes.length+' ảnh');
+  status('✅ Đã tải ZIP phân thư mục: '+fileCount+' file');
 }
 function clearBatch(){
   bFiles=[];bBlobs={};bResults=[];
@@ -2773,14 +2929,19 @@ async function dlFolderByCode(themeCode,e){
     status(`✅ Tải thư mục ${th.folder} từ Drive: ${items.length} ảnh`);
   } else {
     status(`⏳ Đang đóng gói ${items.length} ảnh...`);
-    const zip=new JSZip();const folder=zip.folder(th.folder);
+    const zip=new JSZip();let fc=0;
     for(const item of items){
       if(!item.imgData)continue;
-      const res=await fetch(item.imgData);folder.file(item.code+'.jpg',await res.blob());
+      const res=await fetch(item.imgData);
+      zip.folder('File_in').folder(th.folder).file(item.code+'.jpg',await res.blob());fc++;
+      if(item.mockupData){
+        const rm=await fetch(item.mockupData);
+        zip.folder('Mockup').folder(th.folder).file(item.code+'.jpg',await rm.blob());fc++;
+      }
     }
     const blob=await zip.generateAsync({type:'blob'});
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=th.folder+'_'+new Date().toISOString().slice(0,10)+'.zip';a.click();
-    status(`✅ Tải thư mục ${th.folder}: ${items.length} ảnh`);
+    status(`✅ Tải thư mục ${th.folder}: ${fc} file`);
   }
 }
 
@@ -2911,6 +3072,154 @@ async function clearAll(){
 }
 
 // ══════════════════════════════════════════════════════════════════
+// FILE SYSTEM ACCESS — AUTO-SAVE TO DISK
+// ══════════════════════════════════════════════════════════════════
+const FSA_DB_NAME='avdecor_fsa';
+const FSA_STORE='handles';
+function openFsaDB(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open(FSA_DB_NAME,1);
+    r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(FSA_STORE))db.createObjectStore(FSA_STORE);};
+    r.onsuccess=e=>res(e.target.result);r.onerror=e=>rej(e.target.error);
+  });
+}
+async function storeDirHandle(handle){
+  const db=await openFsaDB();
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(FSA_STORE,'readwrite');
+    tx.objectStore(FSA_STORE).put(handle,'saveDir');
+    tx.oncomplete=()=>res();tx.onerror=e=>rej(e.target.error);
+  });
+}
+async function loadDirHandle(){
+  try{
+    const db=await openFsaDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(FSA_STORE,'readonly');
+      const r=tx.objectStore(FSA_STORE).get('saveDir');
+      r.onsuccess=e=>res(e.target.result||null);r.onerror=e=>res(null);
+    });
+  }catch(e){return null;}
+}
+async function removeDirHandle(){
+  try{
+    const db=await openFsaDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(FSA_STORE,'readwrite');
+      tx.objectStore(FSA_STORE).delete('saveDir');
+      tx.oncomplete=()=>res();tx.onerror=e=>res();
+    });
+  }catch(e){}
+}
+
+async function pickSaveDir(){
+  if(!window.showDirectoryPicker){
+    document.getElementById('no-fsa-warn').style.display='block';return;
+  }
+  try{
+    saveDirHandle=await window.showDirectoryPicker({mode:'readwrite'});
+    await storeDirHandle(saveDirHandle);
+    autoSaveDisk=true;
+    updateSaveDirUI();
+    status('✅ Đã chọn thư mục: '+saveDirHandle.name);
+  }catch(e){
+    if(e.name!=='AbortError') console.error('pickSaveDir error:',e);
+  }
+}
+function clearSaveDir(){
+  saveDirHandle=null;autoSaveDisk=false;
+  removeDirHandle();
+  updateSaveDirUI();
+  status('Đã bỏ chọn thư mục lưu file');
+}
+function updateSaveDirUI(){
+  const nameEl=document.getElementById('save-dir-name');
+  const statusEl=document.getElementById('save-dir-status');
+  if(saveDirHandle && autoSaveDisk){
+    nameEl.style.display='block';
+    document.getElementById('save-dir-label').textContent=saveDirHandle.name;
+    statusEl.textContent='✅ Đã kết nối';statusEl.style.color='#6de06d';
+  }else{
+    nameEl.style.display='none';
+    statusEl.textContent='Chưa chọn thư mục';statusEl.style.color='var(--text2)';
+  }
+}
+async function restoreSaveDirHandle(){
+  if(!window.showDirectoryPicker) {
+    document.getElementById('no-fsa-warn').style.display='block';return;
+  }
+  const handle=await loadDirHandle();
+  if(!handle) return;
+  // Verify permission still valid
+  try{
+    const perm=await handle.queryPermission({mode:'readwrite'});
+    if(perm==='granted'){saveDirHandle=handle;autoSaveDisk=true;updateSaveDirUI();return;}
+    // Try to request permission silently (user gesture may be needed)
+    const req=await handle.requestPermission({mode:'readwrite'});
+    if(req==='granted'){saveDirHandle=handle;autoSaveDisk=true;updateSaveDirUI();}
+  }catch(e){console.log('Dir handle restore failed, user may need to re-select');}
+}
+
+/* Save a single blob to disk: rootDir/sub1/sub2/filename
+   pathParts = array of subfolder names, e.g. ['Mockup','Truu_tuong'] */
+async function saveToDisk(pathParts, filename, blob){
+  if(!saveDirHandle||!autoSaveDisk) return false;
+  try{
+    const perm=await saveDirHandle.queryPermission({mode:'readwrite'});
+    if(perm!=='granted'){
+      const req=await saveDirHandle.requestPermission({mode:'readwrite'});
+      if(req!=='granted'){status('⚠️ Không có quyền ghi, vui lòng chọn lại thư mục');return false;}
+    }
+    let dir=saveDirHandle;
+    for(const part of pathParts){
+      dir=await dir.getDirectoryHandle(part,{create:true});
+    }
+    const fileHandle=await dir.getFileHandle(filename,{create:true});
+    const writable=await fileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return true;
+  }catch(e){
+    console.error('saveToDisk error:',e);
+    return false;
+  }
+}
+
+/* Detect original file extension from entry filename */
+function getOrigExt(entry){
+  const fn=entry.filename||'';
+  const m=fn.match(/\.([a-zA-Z0-9]+)$/);
+  if(m){
+    const ext=m[1].toLowerCase();
+    // Common image formats to preserve
+    if(['tif','tiff','png','psd','bmp','webp','heic','heif','svg','eps','ai','pdf'].includes(ext)) return '.'+ext;
+  }
+  return null; // default: use blob type
+}
+
+/* Save file-in + mockup to disk with structure:
+   rootDir / File_in / <theme_folder> / CODE.ext
+   rootDir / Mockup  / <theme_folder> / CODE.jpg */
+async function autoSaveFiles(entry, fileInBlob, mockupBlob){
+  if(!saveDirHandle||!autoSaveDisk) return 0;
+  const themeFolder=entry.folder||entry.theme_code||'Khac';
+  let saved=0;
+  if(fileInBlob){
+    // Preserve original extension if possible, else detect from blob
+    let ext=getOrigExt(entry);
+    if(!ext){
+      const isPNG=fileInBlob.type==='image/png';
+      ext=isPNG?'.png':'.jpg';
+    }
+    if(await saveToDisk(['File_in',themeFolder], entry.code+ext, fileInBlob)) saved++;
+  }
+  if(mockupBlob){
+    if(await saveToDisk(['Mockup',themeFolder], entry.code+'.jpg', mockupBlob)) saved++;
+  }
+  return saved;
+}
+
+// ══════════════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════════════
 (async function(){
@@ -2953,6 +3262,9 @@ async function clearAll(){
   const savedMode=localStorage.getItem('storage_mode')||'offline';
   storageMode=savedMode;
   updateStorageUI();
+
+  // Restore File System Access directory handle
+  restoreSaveDirHandle();
 
   if(savedMode==='drive' && driveClientId){
     // Show connected state optimistically, then silent auth
