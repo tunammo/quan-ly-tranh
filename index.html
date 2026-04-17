@@ -1497,7 +1497,10 @@ async function stampImg(dataURL,code){
   cv.width=img.width;cv.height=img.height;
   const ctx=cv.getContext('2d');ctx.drawImage(img,0,0);
   await drawStamp(ctx,img.width,img.height,code);
-  return new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error('Canvas error')),'image/jpeg',.93));
+  const isPNG=dataURL.startsWith('data:image/png');
+  const fmt=isPNG?'image/png':'image/jpeg';
+  const q=isPNG?undefined:0.98;
+  return new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error('Canvas error')),fmt,q));
 }
 /* Core stamp drawing — reusable for preview and real stamp
    mode: 'code' = mã + logo (default), 'logo' = chỉ logo */
@@ -2014,7 +2017,7 @@ async function createMockupFromTemplate(paintingURLs, templateURL, frames){
       ctx.drawImage(painting,dx+borderW,dy+borderW,dw-borderW*2,dh-borderW*2);
     }catch(e){}
   }
-  return cv.toDataURL('image/jpeg',0.93);
+  return cv.toDataURL('image/jpeg',0.98);
 }
 
 /* ── Khung 521: composite frame — 9mm slim face, 34mm deep ──
@@ -2279,13 +2282,16 @@ async function doLogoSingle(){
     const cv=document.getElementById('cv2');cv.width=img.width;cv.height=img.height;
     const ctx=cv.getContext('2d');ctx.drawImage(img,0,0);
     await drawStamp(ctx,img.width,img.height,'','logo');
+    const isPNG=sDataURL.startsWith('data:image/png');
+    const fmt=isPNG?'image/png':'image/jpeg';
+    const ext=isPNG?'.png':'.jpg';
     cv.toBlob(b=>{
       if(!b)return;
       const a=document.createElement('a');a.href=URL.createObjectURL(b);
-      a.download=(sFile?sFile.name.replace(/\.[^.]+$/,''):'image')+'_logo.jpg';a.click();
+      a.download=(sFile?sFile.name.replace(/\.[^.]+$/,''):'image')+'_logo'+ext;a.click();
       status('✅ Đã tải ảnh đóng logo');
       btn.disabled=false;btn.textContent='🏷️ Đóng logo';
-    },'image/jpeg',0.93);
+    },fmt,isPNG?undefined:0.98);
   }catch(e){status('❌ Lỗi: '+e.message);btn.disabled=false;btn.textContent='🏷️ Đóng logo';}
 }
 /* ── Logo-only: batch / set ── */
@@ -2305,8 +2311,11 @@ async function doLogoBatch(){
       const cv=document.getElementById('cv2');cv.width=img.width;cv.height=img.height;
       const ctx=cv.getContext('2d');ctx.drawImage(img,0,0);
       await drawStamp(ctx,img.width,img.height,'','logo');
-      const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.93));
-      if(blob) zip.file(files[i].name.replace(/\.[^.]+$/,'')+'_logo.jpg',blob);
+      const isPNG=dataURL.startsWith('data:image/png');
+      const fmt=isPNG?'image/png':'image/jpeg';
+      const ext=isPNG?'.png':'.jpg';
+      const blob=await new Promise(r=>cv.toBlob(r,fmt,isPNG?undefined:0.98));
+      if(blob) zip.file(files[i].name.replace(/\.[^.]+$/,'')+'_logo'+ext,blob);
     }catch(e){console.error(e);}
   }
   document.getElementById('prog-fill').style.width='100%';
