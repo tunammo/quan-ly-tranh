@@ -228,6 +228,42 @@ canvas{display:none}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--bg2)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── WORKFLOW SELECTOR ── */
+.wf-selector{display:flex;gap:10px;margin-bottom:16px}
+.wf-card{flex:1;background:var(--bg3);border:2px solid var(--border2);border-radius:12px;padding:18px 14px;cursor:pointer;text-align:center;transition:.18s}
+.wf-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+.wf-card.sel{border-color:var(--gold);background:rgba(200,146,58,.1);box-shadow:0 0 20px rgba(200,146,58,.1)}
+.wf-card .wf-icon{font-size:2rem;margin-bottom:8px;display:block}
+.wf-card .wf-name{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.wf-card .wf-desc{font-size:.72rem;color:var(--text3);line-height:1.5}
+.wf-card.sel .wf-name{color:var(--gold2)}
+
+/* ── ROOM TEMPLATE GRID ── */
+.room-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:600px){.room-grid{grid-template-columns:repeat(2,1fr)}}
+.room-card{background:var(--bg3);border:2px solid var(--border2);border-radius:10px;overflow:hidden;cursor:pointer;transition:.18s;text-align:center}
+.room-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+.room-card.sel{border-color:var(--gold);background:rgba(200,146,58,.08)}
+.room-card .room-preview{width:100%;height:100px;background:var(--bg4);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.room-card .room-preview img{width:100%;height:100%;object-fit:cover}
+.room-card .room-name{padding:8px 6px;font-size:.78rem;font-weight:600;color:var(--text2)}
+.room-card.sel .room-name{color:var(--gold2)}
+
+/* ── MOCKUP PREVIEW ── */
+.mockup-preview{margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid var(--border2);background:var(--bg3);text-align:center;position:relative}
+.mockup-preview img{max-width:100%;max-height:400px;display:block;margin:0 auto}
+.mockup-preview .mp-label{font-size:.75rem;color:var(--text3);padding:6px;border-top:1px solid var(--border)}
+.mockup-badge{position:absolute;top:10px;right:10px;background:rgba(200,146,58,.9);color:#000;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700}
+
+/* ── ENTRY INFO (for dup match showing existing files) ── */
+.entry-info-box{background:var(--bg3);border:1px solid var(--gold);border-radius:10px;padding:14px;margin-top:12px}
+.entry-info-box .ei-code{font-family:monospace;font-size:1.1rem;color:var(--gold2);font-weight:700;margin-bottom:6px}
+.entry-info-box .ei-files{display:flex;gap:8px;margin-top:8px}
+.entry-info-box .ei-file{flex:1;background:var(--bg4);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;font-size:.78rem}
+.entry-info-box .ei-file .ei-check{font-size:1.2rem;margin-bottom:4px;display:block}
+.entry-info-box .ei-file.has{border-color:var(--green)}
+.entry-info-box .ei-file.missing{border-color:var(--border2);opacity:.5}
 </style>
 </head>
 <body>
@@ -255,18 +291,50 @@ canvas{display:none}
      PAGE: UPLOAD
 ════════════════════════════════ -->
 <div class="page active" id="page-upload">
+
+  <!-- Workflow selector -->
+  <div class="card">
+    <div class="card-title">Chọn workflow</div>
+    <div class="wf-selector">
+      <div class="wf-card sel" id="wf-filein" onclick="setWorkflow('filein')">
+        <span class="wf-icon">🖼️</span>
+        <div class="wf-name">Có file in</div>
+        <div class="wf-desc">Có ảnh gốc → chọn phòng → tạo mockup → đóng mã → lưu cả file in + mockup</div>
+      </div>
+      <div class="wf-card" id="wf-mockup" onclick="setWorkflow('mockup')">
+        <span class="wf-icon">🏠</span>
+        <div class="wf-name">Chỉ có mockup</div>
+        <div class="wf-desc">Chỉ có ảnh mockup có sẵn → đóng mã → lưu mockup (thêm file in sau)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Theme -->
   <div class="card">
     <div class="card-title">Chọn chủ đề</div>
     <div class="theme-grid" id="theme-grid"></div>
   </div>
 
+  <!-- Room template (only for filein workflow) -->
+  <div class="card" id="card-room" style="display:block">
+    <div class="card-title">Chọn mẫu phòng (tạo mockup)</div>
+    <div id="room-filter-info" style="font-size:.75rem;color:var(--text2);margin-bottom:8px"></div>
+    <div class="room-grid" id="room-grid"></div>
+    <div style="font-size:.72rem;color:var(--text3);margin-top:8px">Tranh sẽ được ghép vào khung trong phòng mẫu để tạo ảnh mockup</div>
+  </div>
+
+  <!-- Upload -->
   <div class="card">
-    <div class="card-title">Chọn ảnh</div>
+    <div class="card-title" id="upload-card-title">Chọn ảnh gốc (file in)</div>
+
+    <!-- Panel mode: đơn lẻ / bộ tranh / hàng loạt -->
     <div class="btn-row" style="margin:0 0 14px">
       <button class="btn btn-ghost" id="mode-single-btn" onclick="setMode('single')">🖼️ Đơn lẻ</button>
+      <button class="btn btn-ghost" id="mode-set-btn" onclick="setMode('set')">🎨 Bộ tranh</button>
       <button class="btn btn-ghost" id="mode-batch-btn" onclick="setMode('batch')">📦 Hàng loạt</button>
     </div>
 
+    <!-- Single -->
     <div id="zone-single">
       <div class="drop" id="dz-s" ondragover="dzo(event,'dz-s')" ondragleave="dzl('dz-s')" ondrop="dzDropS(event)">
         <input type="file" accept="image/*" onchange="pickSingle(this.files[0])" onclick="this.value=''">
@@ -278,8 +346,36 @@ canvas{display:none}
         <img id="prev-img" src="">
         <div class="prev-label" id="prev-label"></div>
       </div>
+      <!-- Mockup preview -->
+      <div class="mockup-preview" id="mockup-prev" style="display:none">
+        <span class="mockup-badge">MOCKUP</span>
+        <img id="mockup-prev-img" src="">
+        <div class="mp-label" id="mockup-prev-label"></div>
+      </div>
     </div>
 
+    <!-- Set (bộ tranh) -->
+    <div id="zone-set" style="display:none">
+      <div style="font-size:.78rem;color:var(--text2);margin-bottom:10px">Chọn 2-3 ảnh cho bộ tranh. Mỗi ảnh sẽ đặt vào 1 khung trong phòng mẫu.</div>
+      <div class="drop" id="dz-set" ondragover="dzo(event,'dz-set')" ondragleave="dzl('dz-set')" ondrop="dzDropSet(event)">
+        <input type="file" accept="image/*" multiple onchange="pickSet(this.files)" onclick="this.value=''">
+        <span class="drop-icon">🎨</span>
+        <div>Chọn <strong>2-3 ảnh</strong> cho bộ tranh</div>
+        <div class="drop-hint">Mỗi ảnh sẽ được đặt vào 1 khung</div>
+      </div>
+      <div id="set-preview-list" style="display:none;margin-top:10px">
+        <div style="font-size:.78rem;color:var(--text2);margin-bottom:6px" id="set-info"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="set-thumbs"></div>
+      </div>
+      <!-- Set mockup preview -->
+      <div class="mockup-preview" id="set-mockup-prev" style="display:none">
+        <span class="mockup-badge">MOCKUP BỘ TRANH</span>
+        <img id="set-mockup-prev-img" src="">
+        <div class="mp-label" id="set-mockup-prev-label"></div>
+      </div>
+    </div>
+
+    <!-- Batch (hàng loạt) -->
     <div id="zone-batch" style="display:none">
       <div class="drop" id="dz-b" ondragover="dzo(event,'dz-b')" ondragleave="dzl('dz-b')" ondrop="dzDropB(event)">
         <input type="file" accept="image/*" multiple onchange="pickBatch(this.files)" onclick="this.value=''">
@@ -297,6 +393,20 @@ canvas{display:none}
     </div>
   </div>
 
+  <!-- Existing entry info (shown when dup detected and user can add missing file) -->
+  <div id="existing-entry-box" style="display:none">
+    <div class="entry-info-box">
+      <div style="font-size:.78rem;color:var(--text2);margin-bottom:6px">⚠️ Ảnh này đã được đóng mã trước đó:</div>
+      <div class="ei-code" id="ei-code"></div>
+      <div class="ei-files" id="ei-files"></div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn btn-blue" id="ei-add-btn" onclick="addMissingFile()">➕ Thêm file còn thiếu</button>
+        <button class="btn btn-ghost" onclick="dismissExisting()">Bỏ qua</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Process -->
   <div class="card">
     <div class="card-title">Xử lý</div>
     <button class="btn btn-primary btn-full" id="btn-go" onclick="doProcess()" disabled>🔖 Đóng mã & lưu</button>
@@ -314,6 +424,7 @@ canvas{display:none}
             <div class="sim-label" id="sim-label"></div>
             <div class="sim-bar"><div class="sim-fill" id="sim-fill"></div></div>
           </div>
+          <div id="res-files-info" style="font-size:.78rem;color:var(--text2);margin-top:6px"></div>
           <div class="btn-row" style="margin-top:10px">
             <button class="btn btn-primary" onclick="dlSingle()">⬇️ Tải xuống</button>
             <button class="btn btn-ghost" onclick="copyCode()">📋 Copy mã</button>
@@ -767,6 +878,29 @@ let catData=[], catFiltered=[], catPage=1, activeFolder=null;
 let THRESH=10, WARN=18;
 let logoDataURL=null;
 
+// Workflow state
+let workflow='filein'; // 'filein' | 'mockup'
+let selRoom=null; // selected room template key
+let mockupDataURL=null; // generated mockup data URL
+let panelMode='single'; // 'single' | 'set'
+let setFiles=[]; // files for multi-panel set
+let setDataURLs=[]; // dataURLs for multi-panel set
+
+// Room templates (built-in) — frames can be single object or array for multi-frame
+const ROOMS=[
+  // 1-frame rooms
+  {key:'LR', name:'Phòng khách', frames:[{x:0.375,y:0.125,w:0.25,h:0.25}], wallColor:'#f5f0e6', floorColor:'#8b7355', furniture:'sofa'},
+  {key:'BR', name:'Phòng ngủ', frames:[{x:0.35,y:0.075,w:0.3,h:0.225}], wallColor:'#ede4d3', floorColor:'#6b5b4a', furniture:'bed'},
+  {key:'DR', name:'Phòng ăn', frames:[{x:0.0625,y:0.1,w:0.275,h:0.25}], wallColor:'#f0ebe0', floorColor:'#7a6950', furniture:'dining'},
+  {key:'HL', name:'Hành lang', frames:[{x:0.1875,y:0.175,w:0.2,h:0.225}], wallColor:'#e8e0d0', floorColor:'#756550', furniture:'console'},
+  // 2-frame rooms
+  {key:'LR2', name:'Phòng khách (2 tranh)', frames:[{x:0.18,y:0.1,w:0.22,h:0.22},{x:0.6,y:0.1,w:0.22,h:0.22}], wallColor:'#f5f0e6', floorColor:'#8b7355', furniture:'sofa', multi:2},
+  {key:'BR2', name:'Phòng ngủ (2 tranh)', frames:[{x:0.08,y:0.09,w:0.2,h:0.2},{x:0.72,y:0.09,w:0.2,h:0.2}], wallColor:'#ede4d3', floorColor:'#6b5b4a', furniture:'bed', multi:2},
+  // 3-frame rooms
+  {key:'LR3', name:'Phòng khách (3 tranh)', frames:[{x:0.08,y:0.1,w:0.2,h:0.2},{x:0.4,y:0.08,w:0.2,h:0.24},{x:0.72,y:0.1,w:0.2,h:0.2}], wallColor:'#f5f0e6', floorColor:'#8b7355', furniture:'sofa', multi:3},
+  {key:'HL3', name:'Hành lang (3 tranh)', frames:[{x:0.1,y:0.12,w:0.18,h:0.18},{x:0.41,y:0.1,w:0.18,h:0.22},{x:0.72,y:0.12,w:0.18,h:0.18}], wallColor:'#e8e0d0', floorColor:'#756550', furniture:'console', multi:3}
+];
+
 // Google Drive state
 let storageMode='offline'; // 'offline' | 'drive' | 'both'
 let driveToken=null;
@@ -1086,6 +1220,30 @@ async function storeEntry(entry, blob){
   return entry;
 }
 
+async function storeMockupFile(entry, mockupBlob){
+  const doLocal = storageMode==='offline' || storageMode==='both';
+  const doDrive = storageMode==='drive' || storageMode==='both';
+
+  if(doLocal){
+    const mockupB64=await blobToB64(mockupBlob);
+    // Store mockup alongside entry
+    const existing=await dbtx('readonly',s=>s.get(entry.code));
+    if(existing){
+      existing.mockupData=mockupB64;
+      await dbPut(existing);
+    }
+  }
+  if(doDrive && driveToken){
+    try{
+      await ensureToken();
+      const folderId=driveFolderIds[entry.theme_code];
+      if(folderId){
+        await driveUploadImage(mockupBlob, entry.code+'_mockup.jpg', folderId);
+      }
+    }catch(e){console.error('Drive mockup upload failed:',e);}
+  }
+}
+
 async function loadAllEntries(){
   const useDrive = storageMode==='drive' || storageMode==='both';
   if(useDrive){
@@ -1346,17 +1504,43 @@ function goPage(name){
 function setMode(m){
   mode=m;
   document.getElementById('zone-single').style.display=m==='single'?'block':'none';
+  document.getElementById('zone-set').style.display=m==='set'?'block':'none';
   document.getElementById('zone-batch').style.display=m==='batch'?'block':'none';
   document.getElementById('result-single').style.display='none';
+  document.getElementById('existing-entry-box').style.display='none';
   document.getElementById('batch-actions').style.display='none';
   document.getElementById('mode-single-btn').className='btn '+(m==='single'?'btn-primary':'btn-ghost');
+  document.getElementById('mode-set-btn').className='btn '+(m==='set'?'btn-primary':'btn-ghost');
   document.getElementById('mode-batch-btn').className='btn '+(m==='batch'?'btn-primary':'btn-ghost');
+  // Refresh room grid to filter by needed frames
+  renderRoomGrid();
   checkReady();
 }
 function checkReady(){
-  const ok=selTheme&&(mode==='single'?!!sDataURL:bFiles.length>0);
+  let ok=false;
+  if(mode==='set'){
+    // Set mode: need theme + room with matching frames + files
+    const neededFrames=setDataURLs.length;
+    const room=selRoom?ROOMS.find(r=>r.key===selRoom):null;
+    const roomOk=room && room.frames.length===neededFrames;
+    if(workflow==='filein'){
+      ok=selTheme && roomOk && neededFrames>=2;
+    }else{
+      ok=selTheme && setDataURLs.length>=2;
+    }
+  }else if(workflow==='filein'){
+    ok=selTheme && selRoom && (mode==='single'?!!sDataURL:bFiles.length>0);
+  }else{
+    ok=selTheme && (mode==='single'?!!sDataURL:bFiles.length>0);
+  }
   document.getElementById('btn-go').disabled=!ok;
-  document.getElementById('btn-go').textContent=mode==='single'?'🔖 Đóng mã & lưu':`⚡ Đóng mã ${bFiles.length} ảnh`;
+  if(mode==='single'){
+    document.getElementById('btn-go').textContent=workflow==='filein'?'🔖 Đóng mã + Tạo mockup':'🔖 Đóng mã mockup';
+  }else if(mode==='set'){
+    document.getElementById('btn-go').textContent=`🎨 Đóng mã bộ ${setDataURLs.length} tranh`;
+  }else{
+    document.getElementById('btn-go').textContent=`⚡ Đóng mã ${bFiles.length} ảnh`;
+  }
 }
 async function refreshCount(){
   try{
@@ -1402,6 +1586,216 @@ async function silentReconnect(){
 }
 
 // ══════════════════════════════════════════════════════════════════
+// WORKFLOW & ROOM TEMPLATES
+// ══════════════════════════════════════════════════════════════════
+function setWorkflow(wf){
+  workflow=wf;
+  document.getElementById('wf-filein').classList.toggle('sel',wf==='filein');
+  document.getElementById('wf-mockup').classList.toggle('sel',wf==='mockup');
+  document.getElementById('card-room').style.display=wf==='filein'?'block':'none';
+  document.getElementById('upload-card-title').textContent=wf==='filein'?'Chọn ảnh gốc (file in)':'Chọn ảnh mockup';
+  document.getElementById('mockup-prev').style.display='none';
+  mockupDataURL=null;
+  checkReady();
+}
+
+function renderRoomGrid(){
+  const grid=document.getElementById('room-grid');
+  grid.innerHTML='';
+  // Filter rooms: in set mode show only rooms matching frame count, else show 1-frame rooms
+  const neededFrames=mode==='set'?setDataURLs.length:1;
+  const filtered=ROOMS.filter(r=>{
+    if(mode==='set') return r.frames.length===neededFrames;
+    return r.frames.length===1;
+  });
+  const info=document.getElementById('room-filter-info');
+  if(mode==='set' && neededFrames>=2){
+    info.textContent='Hiển thị phòng có '+neededFrames+' khung tranh';
+    info.style.display='block';
+  }else if(mode==='set'){
+    info.textContent='Chọn 2-3 ảnh trước để thấy phòng phù hợp';
+    info.style.display='block';
+  }else{
+    info.style.display='none';
+  }
+  if(!filtered.length && mode==='set' && neededFrames>=2){
+    grid.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:.82rem">Chưa có mẫu phòng '+neededFrames+' khung</div>';
+    return;
+  }
+  filtered.forEach(r=>{
+    const d=document.createElement('div');
+    d.className='room-card'+(selRoom===r.key?' sel':'');
+    d.onclick=()=>pickRoom(r.key);
+    d.innerHTML='<div class="room-preview"><canvas id="room-cv-'+r.key+'" width="200" height="150"></canvas></div><div class="room-name">'+r.name+'</div>';
+    grid.appendChild(d);
+  });
+  setTimeout(()=>filtered.forEach(r=>drawRoomThumb(r)),50);
+}
+
+function drawRoomThumb(room){
+  const cv=document.getElementById('room-cv-'+room.key);
+  if(!cv) return;
+  const ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  ctx.fillStyle=room.wallColor;
+  ctx.fillRect(0,0,W,H*0.7);
+  ctx.fillStyle=room.floorColor;
+  ctx.fillRect(0,H*0.7,W,H*0.3);
+  ctx.fillStyle='#9a8a6a';
+  ctx.fillRect(0,H*0.7-2,W,4);
+  room.frames.forEach(f=>{
+    const fx=f.x*W, fy=f.y*H, fw=f.w*W, fh=f.h*H;
+    ctx.shadowColor='rgba(0,0,0,.3)';ctx.shadowBlur=6;ctx.shadowOffsetY=3;
+    ctx.fillStyle='#b8a888';
+    ctx.fillRect(fx-3,fy-3,fw+6,fh+6);
+    ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+    ctx.fillStyle='#e8dcc8';
+    ctx.fillRect(fx,fy,fw,fh);
+    ctx.fillStyle='rgba(0,0,0,.12)';
+    ctx.font='bold '+Math.round(Math.min(fw,fh)*0.35)+'px sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('🖼️',fx+fw/2,fy+fh/2);
+  });
+  ctx.textAlign='start';
+  drawFurnitureHint(ctx,room.furniture,W,H,room.floorColor);
+}
+
+function drawFurnitureHint(ctx,type,W,H,floorColor){
+  if(type==='sofa'){
+    ctx.fillStyle=floorColor;ctx.globalAlpha=0.5;
+    rr(ctx,W*0.2,H*0.73,W*0.6,H*0.15,4);ctx.fill();ctx.globalAlpha=1;
+  }else if(type==='dining'){
+    ctx.fillStyle='#6a5a48';ctx.globalAlpha=0.35;
+    ctx.beginPath();ctx.ellipse(W*0.5,H*0.82,W*0.18,H*0.08,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+  }else if(type==='bed'){
+    ctx.fillStyle='#5a4a38';ctx.globalAlpha=0.35;
+    rr(ctx,W*0.6,H*0.72,W*0.35,H*0.16,4);ctx.fill();ctx.globalAlpha=1;
+  }else if(type==='console'){
+    ctx.fillStyle='#5a4a38';ctx.globalAlpha=0.35;
+    rr(ctx,W*0.15,H*0.74,W*0.2,H*0.06,2);ctx.fill();ctx.globalAlpha=1;
+  }
+}
+
+function pickRoom(key){
+  selRoom=key;
+  document.querySelectorAll('.room-card').forEach(c=>c.classList.remove('sel'));
+  const cards=document.querySelectorAll('.room-card');
+  const filtered=ROOMS.filter(r=>{
+    if(mode==='set') return r.frames.length===setDataURLs.length;
+    return r.frames.length===1;
+  });
+  filtered.forEach((r,i)=>{if(r.key===key && cards[i]) cards[i].classList.add('sel');});
+  if(workflow==='filein'){
+    if(mode==='set' && setDataURLs.length>=2) generateSetMockupPreview();
+    else if(sDataURL) generateMockupPreview();
+  }
+  checkReady();
+}
+
+async function generateMockupPreview(){
+  if(!sDataURL || !selRoom) return;
+  const room=ROOMS.find(r=>r.key===selRoom);
+  if(!room) return;
+  try{
+    mockupDataURL=await createMockup([sDataURL], room);
+    document.getElementById('mockup-prev-img').src=mockupDataURL;
+    document.getElementById('mockup-prev-label').textContent='Mockup: '+room.name;
+    document.getElementById('mockup-prev').style.display='block';
+  }catch(e){
+    console.error('Mockup error:',e);
+    mockupDataURL=null;
+  }
+}
+
+async function generateSetMockupPreview(){
+  if(!setDataURLs.length || !selRoom) return;
+  const room=ROOMS.find(r=>r.key===selRoom);
+  if(!room || room.frames.length!==setDataURLs.length) return;
+  try{
+    mockupDataURL=await createMockup(setDataURLs, room);
+    document.getElementById('set-mockup-prev-img').src=mockupDataURL;
+    document.getElementById('set-mockup-prev-label').textContent='Mockup bộ '+setDataURLs.length+' tranh: '+room.name;
+    document.getElementById('set-mockup-prev').style.display='block';
+  }catch(e){
+    console.error('Set mockup error:',e);
+    mockupDataURL=null;
+  }
+}
+
+async function createMockup(paintingURLs, room){
+  if(!Array.isArray(paintingURLs)) paintingURLs=[paintingURLs];
+  const cv=document.createElement('canvas');
+  const W=800, H=600;
+  cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle=room.wallColor;
+  ctx.fillRect(0,0,W,H*0.7);
+  ctx.fillStyle='rgba(0,0,0,.02)';
+  for(let i=0;i<W;i+=40){ctx.fillRect(i,0,1,H*0.7);}
+  const floorGrad=ctx.createLinearGradient(0,H*0.7,0,H);
+  floorGrad.addColorStop(0,room.floorColor);
+  floorGrad.addColorStop(1,'rgba(0,0,0,.3)');
+  ctx.fillStyle=floorGrad;
+  ctx.fillRect(0,H*0.7,W,H*0.3);
+  ctx.fillStyle='#b0a080';
+  ctx.fillRect(0,H*0.7-3,W,6);
+  for(let i=0;i<room.frames.length;i++){
+    const f=room.frames[i];
+    const fx=f.x*W, fy=f.y*H, fw=f.w*W, fh=f.h*H;
+    ctx.shadowColor='rgba(0,0,0,.4)';ctx.shadowBlur=18;ctx.shadowOffsetY=7;
+    ctx.fillStyle='#5a4a30';
+    rr(ctx,fx-8,fy-8,fw+16,fh+16,6);ctx.fill();
+    ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+    ctx.fillStyle='#8a7a5a';
+    rr(ctx,fx-8,fy-8,fw+16,fh+16,5);ctx.fill();
+    ctx.fillStyle='#c0b090';
+    rr(ctx,fx-4,fy-4,fw+8,fh+8,3);ctx.fill();
+    ctx.fillStyle='#f5f0e6';
+    rr(ctx,fx,fy,fw,fh,2);ctx.fill();
+    if(paintingURLs[i]){
+      try{
+        const painting=await loadImg(paintingURLs[i]);
+        const pad=6;
+        const px=fx+pad, py=fy+pad, pw=fw-pad*2, ph=fh-pad*2;
+        const imgAR=painting.width/painting.height;
+        const frameAR=pw/ph;
+        let dx,dy,dw,dh;
+        if(imgAR>frameAR){dw=pw;dh=pw/imgAR;dx=px;dy=py+(ph-dh)/2;}
+        else{dh=ph;dw=ph*imgAR;dy=py;dx=px+(pw-dw)/2;}
+        ctx.drawImage(painting,dx,dy,dw,dh);
+      }catch(e){}
+    }
+  }
+  drawRoomFurniture(ctx,room.furniture,W,H);
+  const lg=ctx.createLinearGradient(0,0,0,H*0.3);
+  lg.addColorStop(0,'rgba(255,255,240,.08)');lg.addColorStop(1,'transparent');
+  ctx.fillStyle=lg;ctx.fillRect(0,0,W,H*0.3);
+  return cv.toDataURL('image/jpeg',0.92);
+}
+
+function drawRoomFurniture(ctx,type,W,H){
+  if(type==='sofa'){
+    ctx.fillStyle='#4a4035';rr(ctx,W*0.2,H*0.72,W*0.6,H*0.12,8);ctx.fill();
+    ctx.fillStyle='#5a5045';rr(ctx,W*0.22,H*0.68,W*0.56,H*0.06,6);ctx.fill();
+    ctx.fillStyle='#6a6055';rr(ctx,W*0.25,H*0.73,W*0.16,H*0.08,4);ctx.fill();
+    rr(ctx,W*0.58,H*0.73,W*0.16,H*0.08,4);ctx.fill();
+  }else if(type==='bed'){
+    ctx.fillStyle='#4a3a2a';ctx.fillRect(W*0.55,H*0.65,W*0.4,H*0.05);
+    ctx.fillStyle='#e8ddd0';rr(ctx,W*0.55,H*0.7,W*0.4,H*0.16,4);ctx.fill();
+    ctx.fillStyle='#f0ece4';rr(ctx,W*0.6,H*0.71,W*0.12,H*0.06,4);ctx.fill();
+    ctx.fillStyle='#5a4a3a';ctx.fillRect(W*0.05,H*0.72,W*0.1,H*0.14);
+  }else if(type==='dining'){
+    ctx.fillStyle='#5a4a38';rr(ctx,W*0.3,H*0.75,W*0.4,H*0.03,2);ctx.fill();
+    ctx.fillRect(W*0.33,H*0.78,W*0.02,H*0.12);ctx.fillRect(W*0.65,H*0.78,W*0.02,H*0.12);
+    ctx.fillStyle='#4a3a28';ctx.fillRect(W*0.35,H*0.72,W*0.06,H*0.03);ctx.fillRect(W*0.58,H*0.72,W*0.06,H*0.03);
+  }else if(type==='console'){
+    ctx.fillStyle='#5a4a38';rr(ctx,W*0.15,H*0.72,W*0.22,H*0.03,2);ctx.fill();
+    ctx.fillRect(W*0.17,H*0.75,W*0.02,H*0.1);ctx.fillRect(W*0.33,H*0.75,W*0.02,H*0.1);
+    ctx.fillStyle='#8aaa6a';ctx.beginPath();ctx.ellipse(W*0.26,H*0.7,W*0.015,H*0.025,0,0,Math.PI*2);ctx.fill();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // SINGLE
 // ══════════════════════════════════════════════════════════════════
 async function pickSingle(f){
@@ -1410,19 +1804,142 @@ async function pickSingle(f){
   sOrigDataURL=await readFile(f);
   sDataURL=sOrigDataURL;
   document.getElementById('result-single').style.display='none';
-  document.getElementById('compare-box').style.display='none';
-  // Reset AI button
-  const aiBtn=document.getElementById('btn-ai');
-  aiBtn.disabled=false; aiBtn.textContent='Upscale 4×';
-  document.getElementById('ai-prog').style.display='none';
+  document.getElementById('existing-entry-box').style.display='none';
+  mockupDataURL=null;
 
   document.getElementById('prev-img').src=sOrigDataURL;
   document.getElementById('prev-label').textContent=f.name+' ('+Math.round(f.size/1024)+' KB)';
   document.getElementById('prev-box').style.display='block';
-  document.getElementById('compare-box').style.display='none';
-  // Show AI upscale bar if token is set
-  document.getElementById('ai-bar').style.display=replicateKey?'flex':'none';
+  document.getElementById('mockup-prev').style.display='none';
+
+  // If filein workflow with room selected, generate mockup preview
+  if(workflow==='filein' && selRoom) generateMockupPreview();
   checkReady();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SET (BỘ TRANH) FUNCTIONS
+// ══════════════════════════════════════════════════════════════════
+function dzDropSet(e){e.preventDefault();dzl('dz-set');pickSet(e.dataTransfer.files);}
+
+async function pickSet(files){
+  const arr=Array.from(files).slice(0,3);
+  if(arr.length<2){status('⚠️ Bộ tranh cần ít nhất 2 ảnh');return;}
+  setFiles=arr;
+  setDataURLs=[];
+  const thumbs=document.getElementById('set-thumbs');
+  thumbs.innerHTML='';
+  for(const f of arr){
+    const url=await readFile(f);
+    setDataURLs.push(url);
+    const img=document.createElement('img');
+    img.src=url;
+    img.style.cssText='width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border)';
+    thumbs.appendChild(img);
+  }
+  document.getElementById('set-info').textContent='Bộ '+arr.length+' tranh: '+arr.map(f=>f.name).join(', ');
+  document.getElementById('set-preview-list').style.display='block';
+  document.getElementById('set-mockup-prev').style.display='none';
+  mockupDataURL=null;
+  // Reset room selection and re-render for matching frame count
+  selRoom=null;
+  renderRoomGrid();
+  checkReady();
+}
+
+async function doSet(){
+  if(!selTheme || setDataURLs.length<2) return;
+  const btn=document.getElementById('btn-go');
+  btn.disabled=true;btn.textContent='⏳ Đang xử lý bộ tranh...';
+  document.getElementById('result-single').style.display='none';
+  document.getElementById('existing-entry-box').style.display='none';
+  const pw=document.getElementById('prog-wrap');pw.style.display='block';
+  const pf=document.getElementById('prog-fill'),pl=document.getElementById('prog-label');
+  try{
+    const th=THEMES.find(t=>t.code===selTheme);
+    const code=await nextCode(th.code);
+    const count=setDataURLs.length;
+
+    pf.style.width='20%';pl.textContent='Đang lưu file in...';
+
+    // Save each file in as code-1, code-2, code-3 (NO stamp on file in, just rename)
+    const fileInBlobs=[];
+    for(let i=0;i<count;i++){
+      const subCode=code+'-'+(i+1);
+      pf.style.width=Math.round(20+i/count*30)+'%';
+      pl.textContent='Lưu file in '+subCode+'...';
+      // Convert dataURL to blob without stamping
+      const resp=await fetch(setDataURLs[i]);
+      const blob=await resp.blob();
+      fileInBlobs.push({code:subCode, blob});
+    }
+
+    pf.style.width='55%';pl.textContent='Đang tạo mockup bộ tranh...';
+    let mockupBlob=null;
+    if(workflow==='filein' && selRoom){
+      const room=ROOMS.find(r=>r.key===selRoom);
+      if(!mockupDataURL) mockupDataURL=await createMockup(setDataURLs, room);
+      // Stamp code on mockup
+      mockupBlob=await stampImg(mockupDataURL, code);
+    }
+
+    pf.style.width='75%';pl.textContent='Đang lưu...';
+
+    // Create main entry
+    const hash=await dHash(setDataURLs[0]);
+    const entry={code, theme:th.name, theme_code:th.code, folder:th.folder,
+      filename:setFiles.map(f=>f.name).join(', '),
+      date_added:new Date().toLocaleDateString('vi-VN'),
+      hash, created_at:Date.now(),
+      file_type:mockupBlob?'both':'filein',
+      is_set:true, set_count:count};
+
+    // Store main entry with mockup (or first file in if no mockup)
+    const primaryBlob=mockupBlob||fileInBlobs[0].blob;
+    await storeEntry(entry, primaryBlob);
+
+    // Store individual file-in blobs
+    for(const fi of fileInBlobs){
+      await storeSetFileIn(entry, fi.code, fi.blob);
+    }
+
+    // Store mockup separately if we have both
+    if(mockupBlob && fileInBlobs.length){
+      await storeMockupFile(entry, mockupBlob);
+    }
+
+    sCode=code;
+    pf.style.width='100%';
+    const displaySrc=mockupDataURL||setDataURLs[0];
+    showSingleResult(code, displaySrc, 'ok', 64, null, null, entry.file_type);
+    // Update files info
+    const ftEl=document.getElementById('res-files-info');
+    ftEl.textContent='Bộ '+count+' tranh: '+fileInBlobs.map(f=>f.code).join(', ')+(mockupBlob?' + Mockup':'');
+    ftEl.style.display='block';
+
+    status('✅ Đã lưu bộ '+count+' tranh — mã '+code);
+    refreshCount();
+  }catch(e){status('❌ Lỗi: '+e.message);console.error(e);}
+  finally{btn.disabled=false;checkReady();setTimeout(()=>pw.style.display='none',1200);}
+}
+
+async function storeSetFileIn(entry, subCode, blob){
+  const doLocal = storageMode==='offline' || storageMode==='both';
+  const doDrive = storageMode==='drive' || storageMode==='both';
+  if(doLocal){
+    const imgData=await blobToB64(blob);
+    await dbPut({code:subCode, parent_code:entry.code, theme:entry.theme,
+      theme_code:entry.theme_code, folder:entry.folder,
+      date_added:entry.date_added, created_at:entry.created_at,
+      imgData, file_type:'filein', is_set_piece:true});
+  }
+  if(doDrive && driveToken){
+    try{
+      await ensureToken();
+      const folderId=driveFolderIds[entry.theme_code];
+      if(folderId) await driveUploadImage(blob, subCode+'.jpg', folderId);
+    }catch(e){console.error('Drive set file upload failed:',e);}
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1450,7 +1967,7 @@ function setBRow(i,code,badgeHTML){
 // ══════════════════════════════════════════════════════════════════
 // PROCESS
 // ══════════════════════════════════════════════════════════════════
-async function doProcess(){if(!selTheme)return;mode==='single'?await doSingle():await doBatch();}
+async function doProcess(){if(!selTheme)return;mode==='single'?await doSingle():mode==='set'?await doSet():await doBatch();}
 
 async function doSingle(){
   const btn=document.getElementById('btn-go');
@@ -1459,41 +1976,77 @@ async function doSingle(){
   const pw=document.getElementById('prog-wrap');pw.style.display='block';
   const pf=document.getElementById('prog-fill'),pl=document.getElementById('prog-label');
   try{
-    pf.style.width='25%';pl.textContent='Đang phân tích ảnh...';
+    pf.style.width='20%';pl.textContent='Đang phân tích ảnh...';
     const hash=await dHash(sDataURL);
-    pf.style.width='50%';pl.textContent='Kiểm tra trùng lặp...';
+    pf.style.width='35%';pl.textContent='Kiểm tra trùng lặp...';
     const {dist,entry}=await chkDup(hash);
+
     if(dist<=THRESH&&entry){
       pf.style.width='100%';
-      // For Drive mode, entry.thumb_url might be the only image ref
-      const thumbSrc=entry.imgData||entry.thumb_url||sDataURL;
-      showSingleResult(entry.code,thumbSrc,'dup',dist,entry.code,null);
+      // Show existing entry info with option to add missing file
+      showExistingEntry(entry, dist);
       status(`⚠️ Trùng ${sim(dist)}% với mã ${entry.code} (${dist}/64 bit)`);
       return;
     }
-    pf.style.width='70%';pl.textContent='Đang đóng mã...';
+
+    pf.style.width='50%';pl.textContent='Đang đóng mã...';
     const warnE=(dist<=WARN&&entry)?entry:null;
     const th=THEMES.find(t=>t.code===selTheme);
     const code=await nextCode(th.code);
-    const blob=await stampImg(sDataURL,code);
-    sBlob=blob;sCode=code;
+
+    let fileInBlob=null, mockupBlob=null;
+
+    if(workflow==='filein'){
+      // File in: save original WITHOUT stamp (just rename)
+      const resp=await fetch(sDataURL);
+      fileInBlob=await resp.blob();
+      pf.style.width='65%';pl.textContent='Đang tạo mockup...';
+      // Create mockup if not already created
+      if(!mockupDataURL && selRoom){
+        const room=ROOMS.find(r=>r.key===selRoom);
+        mockupDataURL=await createMockup([sDataURL], room);
+      }
+      if(mockupDataURL){
+        // Stamp code on mockup
+        mockupBlob=await stampImg(mockupDataURL, code);
+      }
+    }else{
+      // Mockup only workflow — stamp code on the uploaded image
+      mockupBlob=await stampImg(sDataURL, code);
+    }
+
     const loadingMsg = storageMode==='drive'?'Đang upload lên Google Drive...' : storageMode==='both'?'Đang lưu offline + Drive...' : 'Đang lưu...';
-    pf.style.width='85%';pl.textContent=loadingMsg;
+    pf.style.width='80%';pl.textContent=loadingMsg;
+
+    const fileType=workflow==='filein'?(mockupBlob?'both':'filein'):'mockup';
     const entry2={code,theme:th.name,theme_code:th.code,folder:th.folder,
       filename:sFile?.name||'',date_added:new Date().toLocaleDateString('vi-VN'),
-      hash,created_at:Date.now()};
-    const saved=await storeEntry(entry2,blob);
+      hash,created_at:Date.now(), file_type:fileType};
+
+    // Save primary blob (file_in for filein workflow, mockup for mockup workflow)
+    const primaryBlob=fileInBlob||mockupBlob;
+    const saved=await storeEntry(entry2, primaryBlob);
+
+    // Save mockup blob as separate file if both exist
+    if(fileInBlob && mockupBlob){
+      await storeMockupFile(entry2, mockupBlob);
+    }
+
+    sBlob=primaryBlob;sCode=code;
     pf.style.width='100%';
-    const displaySrc=saved.imgData||URL.createObjectURL(blob);
-    showSingleResult(code,displaySrc,'ok',dist,null,warnE);
+
+    // Show the mockup in result if available, otherwise file in
+    const displayBlob=mockupBlob||fileInBlob;
+    const displaySrc=saved.imgData||URL.createObjectURL(displayBlob);
+    showSingleResult(code,displaySrc,'ok',dist,null,warnE,fileType);
     const savedMsg = storageMode==='drive'?`✅ Đã upload ${code} lên Drive / ${th.folder}/` : storageMode==='both'?`✅ Đã lưu ${code} (Offline + Drive)` : `✅ Đã lưu ${code}`;
     status(savedMsg);
     refreshCount();
   }catch(e){status('❌ Lỗi: '+e.message);console.error(e);}
-  finally{btn.disabled=false;btn.textContent='🔖 Đóng mã & lưu';setTimeout(()=>pw.style.display='none',1200);}
+  finally{btn.disabled=false;checkReady();setTimeout(()=>pw.style.display='none',1200);}
 }
 
-function showSingleResult(code,imgSrc,type,dist,dupCode,warnE){
+function showSingleResult(code,imgSrc,type,dist,dupCode,warnE,fileType){
   document.getElementById('res-thumb').src=imgSrc;
   document.getElementById('res-thumb').onclick=()=>openLbSrc(imgSrc,code);
   document.getElementById('res-code').textContent=code;sCode=code;
@@ -1514,7 +2067,113 @@ function showSingleResult(code,imgSrc,type,dist,dupCode,warnE){
     sw.style.display='none';
   }
   document.getElementById('res-badge').innerHTML=badge;
+
+  // Show file type info
+  const ftInfo=document.getElementById('res-files-info');
+  if(fileType && type!=='dup'){
+    const labels={'filein':'📄 File in','mockup':'🏠 Mockup','both':'📄 File in + 🏠 Mockup'};
+    ftInfo.textContent='Đã lưu: '+(labels[fileType]||fileType);
+    ftInfo.style.display='block';
+  }else{
+    ftInfo.style.display='none';
+  }
+
   document.getElementById('result-single').style.display='block';
+}
+
+function showExistingEntry(entry, dist){
+  document.getElementById('ei-code').textContent=entry.code+' · '+entry.theme+' · '+sim(dist)+'% giống';
+  const filesDiv=document.getElementById('ei-files');
+  const ft=entry.file_type||'filein'; // legacy entries default to filein
+  const hasFileIn=ft==='filein'||ft==='both';
+  const hasMockup=ft==='mockup'||ft==='both';
+  filesDiv.innerHTML=
+    `<div class="ei-file ${hasFileIn?'has':'missing'}"><span class="ei-check">${hasFileIn?'✅':'❌'}</span>File in</div>`+
+    `<div class="ei-file ${hasMockup?'has':'missing'}"><span class="ei-check">${hasMockup?'✅':'❌'}</span>Mockup</div>`;
+
+  // Show add button only if something is missing
+  const canAdd=(!hasFileIn && workflow==='filein') || (!hasMockup && workflow==='mockup');
+  document.getElementById('ei-add-btn').style.display=canAdd?'inline-flex':'none';
+  document.getElementById('ei-add-btn').textContent=!hasFileIn?'➕ Thêm file in':'➕ Thêm mockup';
+  document.getElementById('ei-add-btn').dataset.code=entry.code;
+  document.getElementById('ei-add-btn').dataset.missingType=!hasFileIn?'filein':'mockup';
+
+  document.getElementById('existing-entry-box').style.display='block';
+
+  // Also show dup result
+  const thumbSrc=entry.imgData||entry.thumb_url||sDataURL;
+  showSingleResult(entry.code,thumbSrc,'dup',dist,entry.code,null,entry.file_type);
+}
+
+async function addMissingFile(){
+  const btn=document.getElementById('ei-add-btn');
+  const code=btn.dataset.code;
+  const missingType=btn.dataset.missingType;
+  btn.disabled=true;btn.textContent='⏳ Đang lưu...';
+
+  try{
+    let blob;
+    if(missingType==='filein'){
+      // File in: save original without stamp
+      const resp=await fetch(sDataURL);
+      blob=await resp.blob();
+    }else{
+      // Create mockup from the original
+      if(workflow==='filein' && selRoom){
+        if(!mockupDataURL){
+          const room=ROOMS.find(r=>r.key===selRoom);
+          mockupDataURL=await createMockup([sDataURL], room);
+        }
+        blob=await stampImg(mockupDataURL, code);
+      }else{
+        blob=await stampImg(sDataURL, code);
+      }
+    }
+
+    // Update entry file_type to 'both'
+    const doLocal = storageMode==='offline' || storageMode==='both';
+    const doDrive = storageMode==='drive' || storageMode==='both';
+
+    if(doLocal){
+      const existing=await dbtx('readonly',s=>s.get(code));
+      if(existing){
+        if(missingType==='filein'){
+          existing.imgData=await blobToB64(blob);
+        }else{
+          existing.mockupData=await blobToB64(blob);
+        }
+        existing.file_type='both';
+        await dbPut(existing);
+      }
+    }
+    if(doDrive && driveToken){
+      try{
+        await ensureToken();
+        const all=catData;
+        const entry=all.find(e=>e.code===code);
+        if(entry){
+          const folderId=driveFolderIds[entry.theme_code];
+          if(folderId){
+            const suffix=missingType==='mockup'?'_mockup':'';
+            await driveUploadImage(blob, code+suffix+'.jpg', folderId);
+          }
+          entry.file_type='both';
+          await driveUpdateCatalog(all);
+        }
+      }catch(e){console.error(e);}
+    }
+
+    status(`✅ Đã thêm ${missingType==='filein'?'file in':'mockup'} cho mã ${code}`);
+    document.getElementById('existing-entry-box').style.display='none';
+  }catch(e){
+    status('❌ Lỗi: '+e.message);
+  }finally{
+    btn.disabled=false;btn.textContent='➕ Thêm file còn thiếu';
+  }
+}
+
+function dismissExisting(){
+  document.getElementById('existing-entry-box').style.display='none';
 }
 
 function dlSingle(){
@@ -1544,10 +2203,25 @@ async function doBatch(){
         bResults.push({code:entry.code,status:'dup',dist});continue;
       }
       const code=await nextCode(th.code);
-      const blob=await stampImg(dataURL,code);
+      let blob;
+      if(workflow==='filein' && selRoom){
+        // File in: save original WITHOUT stamp (just rename)
+        const resp2=await fetch(dataURL);
+        blob=await resp2.blob();
+        // Create + stamp mockup
+        try{
+          const room=ROOMS.find(r=>r.key===selRoom);
+          const mURL=await createMockup([dataURL], room);
+          const mBlob=await stampImg(mURL, code);
+          bBlobs[code+'_mockup']=mBlob;
+        }catch(e){console.error('Batch mockup error:',e);}
+      }else{
+        // Mockup workflow: stamp code on mockup
+        blob=await stampImg(dataURL,code);
+      }
       const entry2={code,theme:th.name,theme_code:th.code,folder:th.folder,
         filename:bFiles[i].name,date_added:new Date().toLocaleDateString('vi-VN'),
-        hash,created_at:Date.now()};
+        hash,created_at:Date.now(),file_type:workflow==='filein'?'both':'mockup'};
       await storeEntry(entry2,blob);
       bBlobs[code]=blob;
       bResults.push({code,status:'ok',folder:th.folder});
@@ -1884,6 +2558,9 @@ async function clearAll(){
     };
     grid.appendChild(btn);
   });
+
+  // Build room template grid
+  renderRoomGrid();
 
   setMode('single');
   setShMode('single');
