@@ -272,6 +272,7 @@ canvas{display:none}
   <h1>Quản Lý Mẫu Tranh</h1>
   <div class="header-right">
     <div class="hstat" id="stat-storage">💾 Offline</div>
+    <div class="hstat" id="stat-disk" style="display:none">📂 Ổ cứng</div>
     <div class="hstat" id="stat-count">⏳</div>
   </div>
 </header>
@@ -745,7 +746,7 @@ canvas{display:none}
     <div id="drive-info" style="display:none">
       <div class="info-box">
         Ảnh lưu trên <strong>Google Drive</strong> của bạn, phân thư mục theo chủ đề.<br>
-        Toàn bộ nhóm cùng truy cập bằng cách <strong>chia sẻ thư mục</strong> "AV Decor Tranh" trong Drive.
+        Toàn bộ nhóm cùng truy cập bằng cách <strong>chia sẻ thư mục</strong> "Mock up va File" trong Drive.
       </div>
 
       <!-- Nếu đã kết nối -->
@@ -769,7 +770,7 @@ canvas{display:none}
         <h4>⚙️ Thiết lập Google Drive (làm một lần)</h4>
         <div class="drive-step">
           <div class="step-num">1</div>
-          <div>Vào <a href="https://console.cloud.google.com" target="_blank" style="color:var(--gold2)">console.cloud.google.com</a> → Tạo project mới (ví dụ: "AV Decor Tranh")</div>
+          <div>Vào <a href="https://console.cloud.google.com" target="_blank" style="color:var(--gold2)">console.cloud.google.com</a> → Tạo project mới (ví dụ: "Mock up va File")</div>
         </div>
         <div class="drive-step">
           <div class="step-num">2</div>
@@ -1006,7 +1007,7 @@ const THEMES=[
   {name:'Dán tường',   code:'DT',  emoji:'🧱', folder:'Dan_tuong'},
 ];
 const DB_NAME='avdecor_v3', DB_VER=1, STORE='cat', PAGE=50;
-const DRIVE_ROOT_NAME='AV Decor Tranh';
+const DRIVE_ROOT_NAME='Mock up va File';
 const DRIVE_CATALOG_NAME='catalog.json';
 
 let DB=null;
@@ -1085,7 +1086,8 @@ let storageMode='offline'; // 'offline' | 'drive' | 'both'
 let driveToken=null;
 let driveTokenExpiry=0;
 let driveRootId=null;
-let driveFolderIds={}; // {H: id, PC: id, ...}
+let driveFolderIds={}; // File_in subfolders: {TT: id, HD: id, ...}
+let driveMockupIds={}; // Mockup subfolders: {TT: id, HD: id, ...}
 let driveCatalogFileId=null;
 let driveUserEmail='';
 let driveClientId='';
@@ -1309,15 +1311,21 @@ async function connectDrive(){
 }
 
 async function setupDriveFolders(){
-  status('⏳ Đang thiết lập thư mục Drive...',8000);
+  status('⏳ Đang thiết lập thư mục Drive...',15000);
   // Root folder
   driveRootId=await driveEnsureFolder(DRIVE_ROOT_NAME, null);
   localStorage.setItem('drive_root_id',driveRootId);
-  // Theme subfolders
+  // Two main branches
+  const fileInRootId=await driveEnsureFolder('File_in', driveRootId);
+  const mockupRootId=await driveEnsureFolder('Mockup', driveRootId);
+  // Theme subfolders under each branch
   for(const th of THEMES){
-    driveFolderIds[th.code]=await driveEnsureFolder(th.folder, driveRootId);
+    status(`⏳ Tạo thư mục: ${th.name}...`,15000);
+    driveFolderIds[th.code]=await driveEnsureFolder(th.folder, fileInRootId);
+    driveMockupIds[th.code]=await driveEnsureFolder(th.folder, mockupRootId);
   }
   localStorage.setItem('drive_folder_ids',JSON.stringify(driveFolderIds));
+  localStorage.setItem('drive_mockup_ids',JSON.stringify(driveMockupIds));
   // Catalog
   const existing=await driveFindFile(DRIVE_CATALOG_NAME, driveRootId);
   if(existing){
@@ -1325,7 +1333,7 @@ async function setupDriveFolders(){
     localStorage.setItem('drive_catalog_id',driveCatalogFileId);
   }
   document.getElementById('drive-folder-info').textContent=
-    `📁 ${DRIVE_ROOT_NAME}/ · ${Object.keys(driveFolderIds).length} thư mục con`;
+    `📁 ${DRIVE_ROOT_NAME}/ · File_in + Mockup · ${Object.keys(driveFolderIds).length} chủ đề`;
 }
 
 function showDriveConnected(){
@@ -1341,9 +1349,9 @@ function showDriveConnected(){
 
 function disconnectDrive(){
   if(!confirm('Ngắt kết nối Google Drive? Dữ liệu trên Drive không bị xoá.')) return;
-  driveToken=null; driveRootId=null; driveFolderIds={}; driveCatalogFileId=null;
+  driveToken=null; driveRootId=null; driveFolderIds={}; driveMockupIds={}; driveCatalogFileId=null;
   localStorage.removeItem('drive_client_id');localStorage.removeItem('drive_root_id');
-  localStorage.removeItem('drive_folder_ids');localStorage.removeItem('drive_catalog_id');
+  localStorage.removeItem('drive_folder_ids');localStorage.removeItem('drive_mockup_ids');localStorage.removeItem('drive_catalog_id');
   localStorage.removeItem('drive_email');localStorage.removeItem('storage_mode');
   storageMode='offline';
   document.getElementById('drive-setup-box').style.display='block';
@@ -1415,9 +1423,9 @@ async function storeMockupFile(entry, mockupBlob){
   if(doDrive && driveToken){
     try{
       await ensureToken();
-      const folderId=driveFolderIds[entry.theme_code];
+      const folderId=driveMockupIds[entry.theme_code]||driveFolderIds[entry.theme_code];
       if(folderId){
-        await driveUploadImage(mockupBlob, entry.code+'_mockup.jpg', folderId);
+        await driveUploadImage(mockupBlob, entry.code+'.jpg', folderId);
       }
     }catch(e){console.error('Drive mockup upload failed:',e);}
   }
@@ -2641,10 +2649,11 @@ async function addMissingFile(){
         const all=catData;
         const entry=all.find(e=>e.code===code);
         if(entry){
-          const folderId=driveFolderIds[entry.theme_code];
+          const folderId=missingType==='mockup'
+            ?(driveMockupIds[entry.theme_code]||driveFolderIds[entry.theme_code])
+            :driveFolderIds[entry.theme_code];
           if(folderId){
-            const suffix=missingType==='mockup'?'_mockup':'';
-            await driveUploadImage(blob, code+suffix+'.jpg', folderId);
+            await driveUploadImage(blob, code+'.jpg', folderId);
           }
           entry.file_type='both';
           await driveUpdateCatalog(all);
@@ -3121,10 +3130,26 @@ async function pickSaveDir(){
     await storeDirHandle(saveDirHandle);
     autoSaveDisk=true;
     updateSaveDirUI();
-    status('✅ Đã chọn thư mục: '+saveDirHandle.name);
+    status('⏳ Đang tạo cấu trúc thư mục...');
+    await preCreateDiskFolders();
+    status('✅ Đã chọn thư mục: '+saveDirHandle.name+' · Đã tạo sẵn thư mục');
   }catch(e){
     if(e.name!=='AbortError') console.error('pickSaveDir error:',e);
   }
+}
+
+/* Pre-create full folder tree:
+   File_in/<theme>  +  Mockup/<theme>  for all 35 themes */
+async function preCreateDiskFolders(){
+  if(!saveDirHandle) return;
+  try{
+    const fileInDir=await saveDirHandle.getDirectoryHandle('File_in',{create:true});
+    const mockupDir=await saveDirHandle.getDirectoryHandle('Mockup',{create:true});
+    for(const th of THEMES){
+      await fileInDir.getDirectoryHandle(th.folder,{create:true});
+      await mockupDir.getDirectoryHandle(th.folder,{create:true});
+    }
+  }catch(e){console.error('preCreateDiskFolders error:',e);}
 }
 function clearSaveDir(){
   saveDirHandle=null;autoSaveDisk=false;
@@ -3135,13 +3160,16 @@ function clearSaveDir(){
 function updateSaveDirUI(){
   const nameEl=document.getElementById('save-dir-name');
   const statusEl=document.getElementById('save-dir-status');
+  const hdrDisk=document.getElementById('stat-disk');
   if(saveDirHandle && autoSaveDisk){
     nameEl.style.display='block';
     document.getElementById('save-dir-label').textContent=saveDirHandle.name;
     statusEl.textContent='✅ Đã kết nối';statusEl.style.color='#6de06d';
+    hdrDisk.textContent='📂 '+saveDirHandle.name;hdrDisk.style.display='';
   }else{
     nameEl.style.display='none';
     statusEl.textContent='Chưa chọn thư mục';statusEl.style.color='var(--text2)';
+    hdrDisk.style.display='none';
   }
 }
 async function restoreSaveDirHandle(){
@@ -3258,6 +3286,7 @@ async function autoSaveFiles(entry, fileInBlob, mockupBlob){
   driveRootId=localStorage.getItem('drive_root_id')||null;
   driveCatalogFileId=localStorage.getItem('drive_catalog_id')||null;
   try{driveFolderIds=JSON.parse(localStorage.getItem('drive_folder_ids')||'{}');}catch(e){driveFolderIds={};}
+  try{driveMockupIds=JSON.parse(localStorage.getItem('drive_mockup_ids')||'{}');}catch(e){driveMockupIds={};}
 
   const savedMode=localStorage.getItem('storage_mode')||'offline';
   storageMode=savedMode;
@@ -3470,7 +3499,7 @@ async function shSaveEntry(filename, dataURL){
 
   if(useDrive){
     await ensureToken();
-    // Save to AV Decor Tranh/Lam_Net/ folder
+    // Save to Mock up va File/Lam_Net/ folder
     if(!shDriveFolderId) await ensureShDriveFolder();
     await driveUploadImage(blob, baseName, shDriveFolderId);
   }
@@ -3758,42 +3787,4 @@ async function dcScanBatch(){
         badge='<span class="badge badge-near" style="font-size:.7rem">⚠️ ~'+sim(best)+'%</span>';
         detail='<span style="color:var(--text2)">'+bestE.code+'</span>';
       } else {
-        badge='<span class="badge badge-ok">✅ Mới</span>';
-        detail='';
-      }
-      row.innerHTML='<span style="font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">'+dcBatchFiles[i].name+'</span><span>'+detail+'</span><span>'+badge+'</span>';
-      rows.appendChild(row);
-    }catch(e){
-      dcBatchResults.push({name:dcBatchFiles[i].name,status:'err'});
-      const row=document.createElement('div');
-      row.className='brow'; row.dataset.status='err';
-      row.innerHTML='<span style="font-size:.78rem">'+dcBatchFiles[i].name+'</span><span></span><span><span class="badge badge-err">❌</span></span>';
-      rows.appendChild(row);
-    }
-  }
-
-  pf.style.width='100%'; pl.textContent='Hoàn tất!';
-
-  // Summary
-  const dups=dcBatchResults.filter(r=>r.status==='dup').length;
-  const warns=dcBatchResults.filter(r=>r.status==='warn').length;
-  const oks=dcBatchResults.filter(r=>r.status==='ok').length;
-  document.getElementById('dc-batch-summary').textContent=
-    `📊 ${total} ảnh · 🔁 ${dups} trùng · ⚠️ ${warns} gần giống · ✅ ${oks} mới`;
-
-  document.getElementById('dc-batch-result').style.display='block';
-  btn.disabled=false; btn.textContent='🔍 Quét lại';
-  status(`🔍 Đã quét ${total} ảnh: ${dups} trùng, ${warns} cảnh báo, ${oks} mới`);
-}
-
-function dcFilterResult(filter){
-  const rows=document.getElementById('dc-batch-rows').children;
-  for(const row of rows){
-    if(filter==='all') row.style.display='';
-    else if(filter==='dup') row.style.display=(row.dataset.status==='dup'||row.dataset.status==='warn')?'':'none';
-    else if(filter==='ok') row.style.display=row.dataset.status==='ok'?'':'none';
-  }
-}
-</script>
-</body>
-</html>
+        badge='<span class="badge badge-ok">✅ M
